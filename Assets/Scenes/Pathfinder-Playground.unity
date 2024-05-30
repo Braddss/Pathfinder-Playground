@@ -359,7 +359,9 @@ MonoBehaviour:
     octFrequency: 0.87
     octAmplitude: 0.35
     numOctaves: 8
-  isoValue: 0.05
+  isoValue: 0.22
+  showPath: 1
+  speed: 0.01
   mapMaterial: {fileID: 2100000, guid: 4c41466e282ff164888c1df2846719b7, type: 2}
 --- !u!4 &1767882483
 Transform:

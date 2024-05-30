@@ -41,7 +41,9 @@ namespace Braddss.Pathfinding.Astar
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
-                CalculateCost(map.GetTile(start + neighborDirs[i]));
+                var neighbor = map.GetTile(start + neighborDirs[i]);
+                neighbor.SetParent(startTile);
+                CalculateCost(neighbor);
             }
 
             CalculateCost(startTile);
@@ -64,7 +66,7 @@ namespace Braddss.Pathfinding.Astar
 
                 if (current.Index == end)
                 {
-                    CalculatePath();
+                    var path = CalculatePath();
 
                     for (int i = 0;i < open.Count; i++)
                     {
@@ -79,7 +81,7 @@ namespace Braddss.Pathfinding.Astar
                     open.Clear();
                     closed.Clear();
 
-                    return pathDirections.ToArray();
+                    return path;
                 }
 
 
@@ -92,7 +94,7 @@ namespace Braddss.Pathfinding.Astar
                         continue;
                     }
 
-                    if (open.Contains(neighbor) || CalculateGCost(neighbor) + 1 >= neighbor.GCost)
+                    if (open.Contains(neighbor) && CalculateGCost(neighbor) + 1 >= neighbor.GCost)
                     {
                         continue;
                     }
@@ -134,7 +136,7 @@ namespace Braddss.Pathfinding.Astar
             return counter;
         }
 
-        private void CalculatePath()
+        private Vector2Int[] CalculatePath()
         {
             pathDirections.Clear();
             var tile = map.GetTile(end);
@@ -147,7 +149,20 @@ namespace Braddss.Pathfinding.Astar
                 tile = tile.Parent;
             }
 
-            pathDirections.Reverse();
+            var path = new Vector2Int[pathDirections.Count + 1];
+
+            var current = end;
+            path[^1] = current;
+
+            for(int i = pathDirections.Count - 1; i >= 0; i--)
+            {
+                current += pathDirections[i];
+                path[i] = current;
+            }
+
+            pathDirections.Clear();
+
+            return path;
         }
 
         private void Clear()

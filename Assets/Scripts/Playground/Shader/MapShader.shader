@@ -7,6 +7,9 @@ Shader "Unlit/MapShader"
         _BorderCol ("BorderColor", Color) = (0, 0, 0, 1)
         _PassableCol ("PassableColor", Color) = (1, 1, 1, 1)
         _XPassableCol ("ImpassableColor", Color) = (0.5, 0.5, 0.5, 1)
+        _PathCol ("PathColor", Color) = (0.8, 0.5, 0.4, 1)
+        _StartCol ("StartColor", Color) = (0, 1, 0, 1)
+        _EndCol ("EndColor", Color) = (1, 0, 0, 1)
     }
     SubShader
     {
@@ -25,11 +28,13 @@ Shader "Unlit/MapShader"
 
             StructuredBuffer<int> _MapBuffer;
 
-            StructuredBuffer<int> _PathBuffer;
+            StructuredBuffer<int2> _PathBuffer;
 
             uint _PathIndex;
 
             uint _PathCount;
+
+            uint _ShowPath;
 
             static const int S_XPassable    = 0x00000000u;
             static const int S_Passable     = 0x00000001u;
@@ -47,6 +52,9 @@ Shader "Unlit/MapShader"
             half4 _BorderCol;
             half4 _PassableCol;
             half4 _XPassableCol;
+            half4 _PathCol;
+            half4 _StartCol;
+            half4 _EndCol;
 
             struct appdata
             {
@@ -87,23 +95,35 @@ Shader "Unlit/MapShader"
                 }
 
                 int2 intVec = inputPos;
-                int bufferIndex = intVec.x + intVec.y * _SizeX.x;
 
-                //
-                for (uint i = _PathIndex; i < _PathCount; i++)
+                if (_ShowPath == 1)
                 {
-                    int mapPathIndex = _PathBuffer[i];
+                    int2 startIndex = _PathBuffer[_PathIndex];
+                    int2 endIndex = _PathBuffer[_PathCount - 1];
 
-                    if (bufferIndex == mapPathIndex)
+                    if (startIndex.x == intVec.x && startIndex.y == intVec.y)
                     {
-                        return S_Path;
+                        return S_Player;
+                    }
+
+                    if (endIndex.x == intVec.x && endIndex.y == intVec.y)
+                    {
+                        return S_End;
+                    }
+
+
+                    for (uint i = _PathIndex + 1; i < _PathCount - 1; i++)
+                    {
+                        int2 mapPathIndex = _PathBuffer[i];
+
+                        if (mapPathIndex.x == intVec.x && mapPathIndex.y == intVec.y)
+                        {
+                            return S_Path;
+                        }
                     }
                 }
-                
-                //
 
-                
-
+                int bufferIndex = intVec.x + intVec.y * _SizeX.x;
                 int bufferResult = _MapBuffer[bufferIndex];
 
 
@@ -148,6 +168,18 @@ Shader "Unlit/MapShader"
                 else if (state == S_XPassable)
                 {
                     col = _XPassableCol;
+                }
+                else if (state == S_Path)
+                {
+                    col = _PathCol;
+                }
+                else if (state == S_Player)
+                {
+                    col = _StartCol;
+                }
+                else if (state == S_End)
+                {
+                    col = _EndCol;
                 }
 
                 //fixed4 col = fixed4(pos.x, 1, pos.y, 1);
