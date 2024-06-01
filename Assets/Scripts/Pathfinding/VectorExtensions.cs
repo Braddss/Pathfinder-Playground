@@ -81,6 +81,12 @@ namespace Braddss.Pathfinding
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2Int ToVec2Int(this int2 c)
+        {
+            return new Vector2Int(c.x, c.y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int2[] ToInt2Arr(this Vector2Int[] arr)
         {
             var int2Arr = new int2[arr.Length];

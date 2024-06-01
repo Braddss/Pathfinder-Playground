@@ -50,6 +50,11 @@ namespace Braddss.Pathfinding.Astar
 
             while (true)
             {
+                if (open.Count == 0)
+                {
+                    return new Vector2Int[0];
+                }
+
                 current = open[0];
 
                 for (int i = 1; i < open.Count; i++)
@@ -153,10 +158,11 @@ namespace Braddss.Pathfinding.Astar
 
             var current = end;
             path[^1] = current;
+            var dirCounter = 0;
 
             for(int i = pathDirections.Count - 1; i >= 0; i--)
             {
-                current += pathDirections[i];
+                current += pathDirections[dirCounter++];
                 path[i] = current;
             }
 

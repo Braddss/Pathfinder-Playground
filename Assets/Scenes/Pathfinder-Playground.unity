@@ -228,6 +228,7 @@ GameObject:
   - component: {fileID: 1662681500}
   - component: {fileID: 1662681499}
   - component: {fileID: 1662681498}
+  - component: {fileID: 1662681502}
   m_Layer: 0
   m_Name: Map
   m_TagString: Untagged
@@ -322,6 +323,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1662681502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662681497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 071a4a1f3f42c8440aa11855b77f2d4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1767882481
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,7 +364,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af7eee281073b72449a4cdfc696e8fec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapSize: {x: 60, y: 60}
+  mapSize: {x: 10, y: 10}
   perlinConfig:
     seed: 0
     frequency: 0.23
@@ -361,6 +374,7 @@ MonoBehaviour:
     numOctaves: 8
   isoValue: 0.22
   showPath: 1
+  runPathfinding: 0
   speed: 0.01
   mapMaterial: {fileID: 2100000, guid: 4c41466e282ff164888c1df2846719b7, type: 2}
 --- !u!4 &1767882483

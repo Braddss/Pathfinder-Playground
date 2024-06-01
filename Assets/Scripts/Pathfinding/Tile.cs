@@ -9,7 +9,7 @@ namespace Braddss.Pathfinding
 
         public Vector2Int ParentDir { get; private set; } = Vector2Int.zero;
 
-        public bool Passable { get; private set; }
+        public bool Passable { get; set; }
 
         public Vector2Int Index { get; private set; }
 

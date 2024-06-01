@@ -36,16 +36,20 @@ Shader "Unlit/MapShader"
 
             uint _ShowPath;
 
-            static const int S_XPassable    = 0x00000000u;
-            static const int S_Passable     = 0x00000001u;
-            static const int S_Player       = 0x00000002u;
-            static const int S_End          = 0x00000003u;
-            static const int S_Path         = 0x00000004u;
-            static const int S_Border       = 0x000000010u;
-
+            static const uint S_Nothing      = 0x00000000u;
+            static const uint S_XPassable    = 0x00000001u;
+            static const uint S_Passable     = 0x00000002u;
+            static const uint S_Player       = 0x00000003u;
+            static const uint S_End          = 0x00000004u;
+            static const uint S_Path         = 0x00000005u;
+            static const uint S_Border       = 0x00000006u;
+            static const uint S_Hover        = 0x00001000u;
 
             int _SizeX;
             int _SizeY;
+            
+            int _HoverIndexX;
+            int _HoverIndexY;
 
             half _BorderSize;
 
@@ -73,7 +77,7 @@ Shader "Unlit/MapShader"
                 return float2(planePos.x, planePos.z) / 10 + float2(0.5, 0.5);
             }
 
-            int GetState(float2 inputPos)
+            uint GetState(float2 inputPos)
             {
                 float2 min = float2(0.01, 0.01);
                 float2 max = float2(0.99, 0.99);
@@ -96,6 +100,8 @@ Shader "Unlit/MapShader"
 
                 int2 intVec = inputPos;
 
+                int state = intVec.x == _HoverIndexX && intVec.y == _HoverIndexY ? S_Hover : S_Nothing;
+
                 if (_ShowPath == 1)
                 {
                     int2 startIndex = _PathBuffer[_PathIndex];
@@ -103,12 +109,12 @@ Shader "Unlit/MapShader"
 
                     if (startIndex.x == intVec.x && startIndex.y == intVec.y)
                     {
-                        return S_Player;
+                        return S_Player + state;
                     }
 
                     if (endIndex.x == intVec.x && endIndex.y == intVec.y)
                     {
-                        return S_End;
+                        return S_End + state;
                     }
 
 
@@ -118,25 +124,25 @@ Shader "Unlit/MapShader"
 
                         if (mapPathIndex.x == intVec.x && mapPathIndex.y == intVec.y)
                         {
-                            return S_Path;
+                            return S_Path + state;
                         }
                     }
                 }
 
                 int bufferIndex = intVec.x + intVec.y * _SizeX.x;
-                int bufferResult = _MapBuffer[bufferIndex];
+                uint bufferResult = _MapBuffer[bufferIndex];
 
 
                 if (bufferResult == S_Passable)
                 {
-                    return S_Passable;
+                    return S_Passable + state;
                 }
                 else if (bufferResult == S_XPassable)
                 {
-                    return S_XPassable;
+                    return S_XPassable + state;
                 }
 
-                return S_Passable;
+                return S_Passable + state;
             }
 
             v2f vert (appdata v)
@@ -152,10 +158,13 @@ Shader "Unlit/MapShader"
             {
                 float2 pos = NormPos(i.vertPos);
 
-                int state = GetState(pos);
+                uint state = GetState(pos);
+
+                bool isHovering = S_Hover & state;
+
+                state = state & ~S_Hover;
 
                 fixed4 col = _BorderCol;
-
 
                 if (state == S_Border)
                 {
@@ -182,9 +191,14 @@ Shader "Unlit/MapShader"
                     col = _EndCol;
                 }
 
+                if (isHovering)
+                {
+                    col += fixed4(0.15, 0.15, 0.15, 1);
+                }
+
                 //fixed4 col = fixed4(pos.x, 1, pos.y, 1);
                 // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
+                //UNITY_APPLY_FOG(i.fogCoord, col);
 
 
 
