@@ -30,24 +30,6 @@ Shader "Unlit/MapShader"
 
             StructuredBuffer<int> _MapBuffer;
 
-            StructuredBuffer<int2> _PathBuffer;
-
-            StructuredBuffer<int2> _OpenBuffer;
-
-            StructuredBuffer<int2> _ClosedBuffer;
-
-            uint _PathIndex;
-
-            uint _PathCount;
-
-            uint _OpenCount;
-
-            uint _ClosedCount;
-
-            uint _ShowPath;
-
-            uint _ShowDebug;
-
             static const uint S_Nothing      = 0x00000000u;
             static const uint S_XPassable    = 0x00000001u;
             static const uint S_Passable     = 0x00000002u;
@@ -118,68 +100,10 @@ Shader "Unlit/MapShader"
 
                 int state = intVec.x == _HoverIndexX && intVec.y == _HoverIndexY ? S_Hover : S_Nothing;
 
-                if (_ShowPath == 1)
-                {
-                    int2 startIndex = _PathBuffer[_PathIndex];
-                    int2 endIndex = _PathBuffer[_PathCount - 1];
-
-                    if (startIndex.x == intVec.x && startIndex.y == intVec.y)
-                    {
-                        return S_Player + state;
-                    }
-
-                    if (endIndex.x == intVec.x && endIndex.y == intVec.y)
-                    {
-                        return S_End + state;
-                    }
-
-
-                    for (uint i = _PathIndex + 1; i < _PathCount - 1; i++)
-                    {
-                        int2 mapPathIndex = _PathBuffer[i];
-
-                        if (mapPathIndex.x == intVec.x && mapPathIndex.y == intVec.y)
-                        {
-                            return S_Path + state;
-                        }
-                    }
-
-                    if (_ShowDebug)
-                    {
-                        for (uint j = 0; j < _OpenCount - 1; j++)
-                        {
-                            int2 index = _OpenBuffer[j];
-
-                            if (index.x == intVec.x && index.y == intVec.y)
-                            {
-                                return S_Open + state;
-                            }
-                        }
-
-                        for (uint k = 0; k < _ClosedCount - 1; k++)
-                        {
-                            int2 index = _ClosedBuffer[k];
-
-                            if (index.x == intVec.x && index.y == intVec.y)
-                            {
-                                return S_Closed + state;
-                            }
-                        }
-                    }
-                }
-
                 int bufferIndex = intVec.x + intVec.y * _SizeX.x;
                 uint bufferResult = _MapBuffer[bufferIndex];
 
-
-                if (bufferResult == S_Passable)
-                {
-                    return S_Passable + state;
-                }
-                else if (bufferResult == S_XPassable)
-                {
-                    return S_XPassable + state;
-                }
+                return bufferResult + state;
 
                 return S_Passable + state;
             }

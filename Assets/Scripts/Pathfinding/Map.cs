@@ -56,7 +56,7 @@ namespace Braddss.Pathfinding
             for (int i = 0; i < directions.Length; i++) 
             {
                 var neighborIndex = tile.Index + directions[i];
-                neighbors[i] = IndexInBounds(neighborIndex) ? Tiles[VecToIndex(neighborIndex)] : Tile.OOB();
+                neighbors[i] = IndexInBounds(neighborIndex) ? Tiles[ToIndex(neighborIndex)] : Tile.OOB();
             }
 
             return Tiles;
@@ -65,7 +65,7 @@ namespace Braddss.Pathfinding
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tile GetTile(Vector2Int index)
         {
-            return IndexInBounds(index) ? Tiles[VecToIndex(index)] : Tile.OOB();
+            return IndexInBounds(index) ? Tiles[ToIndex(index)] : Tile.OOB();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,7 +75,7 @@ namespace Braddss.Pathfinding
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int VecToIndex(Vector2Int vec)
+        public int ToIndex(Vector2Int vec)
         {
             return vec.x + vec.y * size.x;
         }

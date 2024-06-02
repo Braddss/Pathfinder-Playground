@@ -83,9 +83,11 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BorderCol: {r: 0, g: 0, b: 0, a: 1}
+    - _ClosedCol: {r: 1, g: 0.514151, b: 0.514151, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _EndCol: {r: 1, g: 0, b: 0, a: 1}
+    - _EndCol: {r: 0, g: 0.018627167, b: 1, a: 1}
+    - _OpenCol: {r: 0.514151, g: 1, b: 0.514151, a: 1}
     - _PassableCol: {r: 0.7031874, g: 0.8584906, b: 0.68436277, a: 1}
     - _PathCol: {r: 0.5943396, g: 0.5223834, b: 0.378471, a: 1}
     - _StartCol: {r: 0, g: 1, b: 0, a: 1}

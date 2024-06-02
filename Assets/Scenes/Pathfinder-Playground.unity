@@ -364,15 +364,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af7eee281073b72449a4cdfc696e8fec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mapSize: {x: 10, y: 10}
+  mapSize: {x: 100, y: 100}
   perlinConfig:
-    seed: 0
-    frequency: 0.23
-    amplitude: 0.79
-    octFrequency: 0.87
-    octAmplitude: 0.35
-    numOctaves: 8
-  isoValue: 0.39
+    seed: 27
+    frequency: 0.2
+    amplitude: 2.48
+    octFrequency: 1.5
+    octAmplitude: 0.54
+    numOctaves: 4
+  isoValue: 0.15
+  showDebug: 0
   showPath: 1
   runPathfinding: 0
   speed: 0.01

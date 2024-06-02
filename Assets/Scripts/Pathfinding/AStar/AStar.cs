@@ -20,8 +20,8 @@ namespace Braddss.Pathfinding.Astar
 
         private Tile current = null;
 
-        private Vector2Int start;
-        private Vector2Int end;
+        public Vector2Int Start { get; private set; }
+        public Vector2Int End { get; private set; }
 
         private Map map;
 
@@ -37,8 +37,8 @@ namespace Braddss.Pathfinding.Astar
         public Vector2Int[] CalculatePath(Vector2Int start, Vector2Int end)
         {
             Clear();
-            this.start = start;
-            this.end = end;
+            this.Start = start;
+            this.End = end;
 
             var startTile = map.GetTile(start);
             open.Add(startTile);
@@ -66,8 +66,8 @@ namespace Braddss.Pathfinding.Astar
         public void InitCalculatePathStepwise(Vector2Int start, Vector2Int end)
         {
             Clear();
-            this.start = start;
-            this.end = end;
+            this.Start = start;
+            this.End = end;
 
             var startTile = map.GetTile(start);
             open.Add(startTile);
@@ -87,6 +87,16 @@ namespace Braddss.Pathfinding.Astar
             return Step();
         }
 
+        public Vector2Int[] GetTempPath()
+        {
+            if (current == null)
+            {
+                return new Vector2Int[0];
+            }
+
+            return CalculatePath(current);
+        }
+    
         private Vector2Int[] Step()
         {
             if (open.Count == 0)
@@ -108,9 +118,9 @@ namespace Braddss.Pathfinding.Astar
             open.Remove(current);
             closed.Add(current);
 
-            if (current.Index == end)
+            if (current.Index == End)
             {
-                var path = CalculatePath();
+                var path = CalculatePath(map.GetTile(End));
 
                 for (int i = 0; i < open.Count; i++)
                 {
@@ -157,7 +167,7 @@ namespace Braddss.Pathfinding.Astar
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = Math.Abs(end.x - tile.Index.x) + Mathf.Abs(end.y - tile.Index.y);
+            var hCost = Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y);
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);
@@ -166,7 +176,7 @@ namespace Braddss.Pathfinding.Astar
         private int CalculateGCost(Tile tile)
         {
             int counter = 0;
-            var startTile = map.GetTile(start);
+            var startTile = map.GetTile(Start);
 
             while (tile != startTile)
             {
@@ -180,14 +190,18 @@ namespace Braddss.Pathfinding.Astar
             return counter;
         }
 
-        private Vector2Int[] CalculatePath()
+        private Vector2Int[] CalculatePathFalse(Tile tile)
         {
             pathDirections.Clear();
-            var tile = map.GetTile(end);
-            var startTile = map.GetTile(start);
+            var startTile = map.GetTile(Start);
 
             while (tile != startTile)
             {
+                if (tile == null)
+                {
+                    return new Vector2Int[0];
+                }
+
                 pathDirections.Add(tile.ParentDir);
 
                 tile = tile.Parent;
@@ -195,14 +209,48 @@ namespace Braddss.Pathfinding.Astar
 
             var path = new Vector2Int[pathDirections.Count + 1];
 
-            var current = end;
+            var current = End;
             path[^1] = current;
             var dirCounter = 0;
 
-            for(int i = pathDirections.Count - 1; i >= 0; i--)
+            for (int i = pathDirections.Count - 1; i >= 0; i--)
             {
                 current += pathDirections[dirCounter++];
                 path[i] = current;
+            }
+
+            pathDirections.Clear();
+
+            return path;
+        }
+
+        private Vector2Int[] CalculatePath(Tile tile)
+        {
+            pathDirections.Clear();
+            var startTile = map.GetTile(Start);
+
+            while (tile != startTile)
+            {
+                if (tile == null)
+                {
+                    return new Vector2Int[0];
+                }
+
+                pathDirections.Add(tile.ParentDir);
+
+                tile = tile.Parent;
+            }
+
+            var path = new Vector2Int[pathDirections.Count + 1];
+
+            var current = Start;
+            path[0] = current;
+            var pathCounter = 1;
+
+            for (int i = pathDirections.Count - 1; i >= 0; i--)
+            {
+                current -= pathDirections[i];
+                path[pathCounter++] = current;
             }
 
             pathDirections.Clear();

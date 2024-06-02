@@ -1,5 +1,6 @@
 using Braddss.Pathfinding;
 using Braddss.Pathfinding.Astar;
+using Codice.Client.BaseCommands.Update.Fast.Transformers;
 using System;
 using System.Linq;
 using Unity.Mathematics;
@@ -14,8 +15,15 @@ namespace Bradds.Playground
 
         public enum PassableState
         {
-            XPassable = 1,
-            Passable = 2,
+            XPassable   = 1,
+            Passable    = 2,
+            Player      = 3,
+            End         = 4,
+            Path        = 5,
+            Open        = 6,
+            Closed      = 7,
+            Border      = 8,
+            Hover       = 4096,
         }
 
         [SerializeField]
@@ -45,8 +53,31 @@ namespace Bradds.Playground
         [SerializeField]
         private float speed = 0.2f;
 
+        private int PathIndex
+        {
+            get => pathIndex;
+
+            set
+            {
+                pathIndex = value;
+                SetMapProperties();
+            }
+        }
+
         private int pathIndex = 0;
-        private readonly int pathIndexId = Shader.PropertyToID("_PathIndex");
+
+        private int DebugIndex
+        {
+            get => debugIndex;
+
+            set
+            {
+                debugIndex = value;
+                SetMapProperties();
+            }
+        }
+
+        private int debugIndex = 0;
 
         [SerializeField]
         private Material mapMaterial;
@@ -54,23 +85,11 @@ namespace Bradds.Playground
         private GraphicsBuffer mapBuffer;
         private int mapBufferId;
 
-        private GraphicsBuffer pathBuffer;
-        private int pathBufferId;
-
-        private GraphicsBuffer openBuffer;
-        private int openBufferId;
-
-        private GraphicsBuffer closedBuffer;
-        private int closedBufferId;
-
         private Map map;
-        private int2[] path;
+        private Vector2Int[] path;
         private AStar aStar;
 
-
         private int currentMapHashCode;
-        private int currentPathHashCode;
-        private int currentDebugHashCode;
 
         public Vector2Int MapSize { get => mapSize; }
 
@@ -85,13 +104,8 @@ namespace Bradds.Playground
         void Start()
         {
             currentMapHashCode = GetMapConfigHashCode();
-            currentPathHashCode = GetPathConfigHashCode();
-            currentDebugHashCode = GetDebugConfigHashCode();
             this.map = new Map(mapSize, perlinConfig, isoValue);
             this.mapBufferId = Shader.PropertyToID("_MapBuffer");
-            this.pathBufferId = Shader.PropertyToID("_PathBuffer");
-            this.openBufferId = Shader.PropertyToID("_OpenBuffer");
-            this.closedBufferId = Shader.PropertyToID("_ClosedBuffer");
 
             SetMapProperties();
         }
@@ -107,9 +121,6 @@ namespace Bradds.Playground
             {
                 RunPathfinding();
             }
-
-            UpdatePathProperties();
-            UpdateDebugProperties();
         }
 
         private void LateUpdate()
@@ -161,14 +172,9 @@ namespace Bradds.Playground
                 return;
             }
 
-            var p = aStar.CalculatePathStepwise();
+            StepDebug();
 
-            if (p != null)
-            {
-                path = p.ToInt2Arr();
-            }
-
-            SetDebugProperties();
+            //SetDebugProperties();
         }
 
         private void StepPath()
@@ -181,12 +187,42 @@ namespace Bradds.Playground
                     stepTimer %= speed;
                 }
 
-                mapMaterial.SetInteger(pathIndexId, ++pathIndex);
+                ++PathIndex;
 
-                if (pathIndex == path.Length - 1)
+                if (PathIndex == path.Length - 1)
                 {
-                    startPos = path[^1].ToVec2Int();
+                    startPos = path[^1];
                     pathNeedsUpdate = true;
+                }
+            }
+        }
+
+        private void StepDebug()
+        {
+            stepTimer += Time.deltaTime;
+
+            if (stepTimer > speed)
+            {
+                if (speed > 0)
+                {
+                    stepTimer %= speed;
+                }
+
+                ++DebugIndex;
+
+                var p = aStar.CalculatePathStepwise();
+
+                if (p != null)
+                {
+                    if (p.Length == 0)
+                    {
+                        pathNeedsUpdate = true;
+                        startPos = null;
+                    }
+                    else
+                    {
+                        path = p;
+                    }
                 }
             }
         }
@@ -246,10 +282,10 @@ namespace Bradds.Playground
             }
 
             Debug.Log($"Start: {start}, End: {end}");
-            path = p.ToInt2Arr();
+            path = p;
 
-            pathIndex = 0;
-            SetPathProperties();
+            PathIndex = 0;
+            //SetPathProperties();
         }
 
         private void CalculatePathStepwise(Vector2Int? start = null)
@@ -303,8 +339,8 @@ namespace Bradds.Playground
 
             Debug.Log($"Start: {start}, End: {end}");
 
-            pathIndex = 0;
-            SetPathProperties();
+            PathIndex = 0;
+            //SetPathProperties(); 
         }
 
         private void UpdateMapProperties()
@@ -322,32 +358,20 @@ namespace Bradds.Playground
             startPos = null;
         }
 
-        private void UpdatePathProperties()
-        {
-            if (currentPathHashCode == GetPathConfigHashCode())
-            {
-                return;
-            }
-
-            currentPathHashCode = GetPathConfigHashCode();
-            SetPathProperties();
-        }
-
-        private void UpdateDebugProperties()
-        {
-            if (currentDebugHashCode == GetDebugConfigHashCode()) 
-            {
-                return; 
-            }
-
-            currentDebugHashCode = GetDebugConfigHashCode();
-
-            SetDebugProperties();
-        }
-
         private void SetMapProperties()
         {
             var bufferData = this.map.Tiles.Select(tile => tile.Passable ? PassableState.Passable : PassableState.XPassable).ToArray();
+
+            if (showDebug)
+            {
+                ApplyDebug(bufferData);
+            }
+
+            if (showPath)
+            {
+                ApplyPath(bufferData);
+            }
+
 
             mapBuffer?.Release();
 
@@ -361,93 +385,68 @@ namespace Bradds.Playground
             mapMaterial.SetInteger("_SizeY", mapSize.y);
         }
 
-        private void SetPathProperties()
+        private void ApplyPath(PassableState[] states)
         {
-            pathBuffer?.Release();
-
-            if (path == null || path.Length == 0)
+            if (path == null)
             {
                 return;
             }
 
-            pathBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None, path.Length, sizeof(int) * 2);
-            
-            pathBuffer.SetData(path);
+            var start = map.ToIndex(path[PathIndex]);
+            var end = map.ToIndex(path[^1]);
 
-            mapMaterial.SetBuffer(pathBufferId, pathBuffer);
-            mapMaterial.SetInteger("_PathIndex", 0);
-            mapMaterial.SetInteger("_PathCount", path.Length);
-            mapMaterial.SetInteger("_OpenCount", 0);
-            mapMaterial.SetInteger("_ClosedCount", 0);
-            mapMaterial.SetInteger("_ShowPath", showPath && runPathfinding ? 1 : 0);
+            states[start] = PassableState.Player;
+            states[end] = PassableState.End;
+
+            for(int i = PathIndex + 1; i < path.Length - 1; i++)
+            {
+                states[map.ToIndex(path[i])] = PassableState.Path;
+            }
         }
 
-        private void SetDebugProperties()
+        private void ApplyDebug(PassableState[] states)
         {
-            openBuffer?.Release();
-            closedBuffer?.Release();
-
-            //mapMaterial.SetInteger("_ShowDebug", showDebug && runPathfinding ? 1 : 0);
-
-            if (!(showDebug && runPathfinding))
+            if (aStar == null || path != null)
             {
                 return;
             }
 
-            var open = aStar.Open.Select(t => t.Index.ToInt2()).ToArray();
+            var open = aStar.Open.Select(t => map.ToIndex(t.Index)).ToArray();
 
-            if (open.Length > 0)
+            var closed = aStar.Closed.Select(t => map.ToIndex(t.Index)).ToArray();
+
+            for (int i = 0; i < open.Length; i++)
             {
-                openBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None, open.Length, sizeof(int) * 2);
-                openBuffer.SetData(open);
+                states[open[i]] = PassableState.Open;
             }
 
-
-            var closed = aStar.Closed.Select(t => t.Index.ToInt2()).ToArray();
-
-            if (closed.Length > 0)
+            for (int i = 0; i < closed.Length; i++)
             {
-                closedBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None, closed.Length, sizeof(int) * 2);
-                closedBuffer.SetData(closed);
+                states[closed[i]] = PassableState.Closed;
             }
- 
-            mapMaterial.SetBuffer(openBufferId, openBuffer);
-            mapMaterial.SetBuffer(closedBufferId, closedBuffer);
 
-            mapMaterial.SetInteger("_OpenCount", open.Length);
-            mapMaterial.SetInteger("_ClosedCount", closed.Length);
+            var start = map.ToIndex(aStar.Start);
+            var end = map.ToIndex(aStar.End);
 
-            mapMaterial.SetInteger("_ShowDebug", showDebug && runPathfinding ? 1 : 0);
+            var tempPath = aStar.GetTempPath();
+
+            states[start] = PassableState.Player;
+            states[end] = PassableState.End;
+
+            for (int i = 1; i < tempPath.Length - 1; i++)
+            {
+                states[map.ToIndex(tempPath[i])] = PassableState.Path;
+            }
         }
 
         private void OnDestroy()
         {
             this.mapBuffer?.Release();
-            this.pathBuffer?.Release();
-            openBuffer?.Release();
-            closedBuffer?.Release();
-
-            mapMaterial.SetInteger("_PathIndex", 0);
-            mapMaterial.SetInteger("_PathCount", 0);
-            mapMaterial.SetInteger("_OpenCount", 0);
-            mapMaterial.SetInteger("_ClosedCount", 0);
-            mapMaterial.SetInteger("_ShowPath", 0);
-            mapMaterial.SetInteger("_ShowDebug", 0);
         }
 
         private int GetMapConfigHashCode()
         {
-            return mapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7;
-        }
-
-        private int GetPathConfigHashCode()
-        {
-            return showPath.GetHashCode() * 3 + runPathfinding.GetHashCode() * 5;
-        }
-
-        private int GetDebugConfigHashCode()
-        {
-            return showDebug.GetHashCode();
+            return mapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7 + showPath.GetHashCode() * 11 + runPathfinding.GetHashCode() * 13 + showDebug.GetHashCode() * 17;
         }
     }
 }
