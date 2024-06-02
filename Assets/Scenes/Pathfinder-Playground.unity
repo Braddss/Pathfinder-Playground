@@ -372,7 +372,7 @@ MonoBehaviour:
     octFrequency: 0.87
     octAmplitude: 0.35
     numOctaves: 8
-  isoValue: 0.22
+  isoValue: 0.39
   showPath: 1
   runPathfinding: 0
   speed: 0.01

@@ -10,6 +10,8 @@ Shader "Unlit/MapShader"
         _PathCol ("PathColor", Color) = (0.8, 0.5, 0.4, 1)
         _StartCol ("StartColor", Color) = (0, 1, 0, 1)
         _EndCol ("EndColor", Color) = (1, 0, 0, 1)
+        _OpenCol ("OpenColor", Color) = (0, 1, 0, 1)
+        _ClosedCol ("ClosedColor", Color) = (1, 0, 0, 1)
     }
     SubShader
     {
@@ -30,11 +32,21 @@ Shader "Unlit/MapShader"
 
             StructuredBuffer<int2> _PathBuffer;
 
+            StructuredBuffer<int2> _OpenBuffer;
+
+            StructuredBuffer<int2> _ClosedBuffer;
+
             uint _PathIndex;
 
             uint _PathCount;
 
+            uint _OpenCount;
+
+            uint _ClosedCount;
+
             uint _ShowPath;
+
+            uint _ShowDebug;
 
             static const uint S_Nothing      = 0x00000000u;
             static const uint S_XPassable    = 0x00000001u;
@@ -42,7 +54,9 @@ Shader "Unlit/MapShader"
             static const uint S_Player       = 0x00000003u;
             static const uint S_End          = 0x00000004u;
             static const uint S_Path         = 0x00000005u;
-            static const uint S_Border       = 0x00000006u;
+            static const uint S_Open         = 0x00000006u;
+            static const uint S_Closed       = 0x00000007u;
+            static const uint S_Border       = 0x00000008u;
             static const uint S_Hover        = 0x00001000u;
 
             int _SizeX;
@@ -59,6 +73,8 @@ Shader "Unlit/MapShader"
             half4 _PathCol;
             half4 _StartCol;
             half4 _EndCol;
+            half4 _OpenCol;
+            half4 _ClosedCol;
 
             struct appdata
             {
@@ -127,6 +143,29 @@ Shader "Unlit/MapShader"
                             return S_Path + state;
                         }
                     }
+
+                    if (_ShowDebug)
+                    {
+                        for (uint j = 0; j < _OpenCount - 1; j++)
+                        {
+                            int2 index = _OpenBuffer[j];
+
+                            if (index.x == intVec.x && index.y == intVec.y)
+                            {
+                                return S_Open + state;
+                            }
+                        }
+
+                        for (uint k = 0; k < _ClosedCount - 1; k++)
+                        {
+                            int2 index = _ClosedBuffer[k];
+
+                            if (index.x == intVec.x && index.y == intVec.y)
+                            {
+                                return S_Closed + state;
+                            }
+                        }
+                    }
                 }
 
                 int bufferIndex = intVec.x + intVec.y * _SizeX.x;
@@ -189,6 +228,14 @@ Shader "Unlit/MapShader"
                 else if (state == S_End)
                 {
                     col = _EndCol;
+                }
+                else if (state == S_Open)
+                {
+                    col = _OpenCol;
+                }
+                else if (state == S_Closed)
+                {
+                    col = _ClosedCol;
                 }
 
                 if (isHovering)

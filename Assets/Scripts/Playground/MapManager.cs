@@ -1,5 +1,6 @@
 using Braddss.Pathfinding;
 using Braddss.Pathfinding.Astar;
+using System;
 using System.Linq;
 using Unity.Mathematics;
 using UnityEngine;
@@ -27,6 +28,10 @@ namespace Bradds.Playground
         private float isoValue = 0.5f;
 
         [SerializeField]
+        private bool showDebug = false;
+        private bool lastShowDebug = false;
+
+        [SerializeField]
         private bool showPath = true;
 
         [SerializeField]
@@ -34,6 +39,8 @@ namespace Bradds.Playground
         private bool lastRunPathfinding = false;
 
         private bool pathNeedsUpdate = false;
+
+        private Vector2Int? startPos = null;
 
         [SerializeField]
         private float speed = 0.2f;
@@ -50,11 +57,20 @@ namespace Bradds.Playground
         private GraphicsBuffer pathBuffer;
         private int pathBufferId;
 
+        private GraphicsBuffer openBuffer;
+        private int openBufferId;
+
+        private GraphicsBuffer closedBuffer;
+        private int closedBufferId;
+
         private Map map;
         private int2[] path;
+        private AStar aStar;
+
 
         private int currentMapHashCode;
         private int currentPathHashCode;
+        private int currentDebugHashCode;
 
         public Vector2Int MapSize { get => mapSize; }
 
@@ -69,10 +85,13 @@ namespace Bradds.Playground
         void Start()
         {
             currentMapHashCode = GetMapConfigHashCode();
-            currentMapHashCode = GetPathConfigHashCode();
+            currentPathHashCode = GetPathConfigHashCode();
+            currentDebugHashCode = GetDebugConfigHashCode();
             this.map = new Map(mapSize, perlinConfig, isoValue);
             this.mapBufferId = Shader.PropertyToID("_MapBuffer");
             this.pathBufferId = Shader.PropertyToID("_PathBuffer");
+            this.openBufferId = Shader.PropertyToID("_OpenBuffer");
+            this.closedBufferId = Shader.PropertyToID("_ClosedBuffer");
 
             SetMapProperties();
         }
@@ -84,18 +103,72 @@ namespace Bradds.Playground
         {
             UpdateMapProperties();
             
+            if (runPathfinding)
+            {
+                RunPathfinding();
+            }
+
+            UpdatePathProperties();
+            UpdateDebugProperties();
+        }
+
+        private void LateUpdate()
+        {
+            lastRunPathfinding = runPathfinding;
+            lastShowDebug = showDebug;
+        }
+
+        private void RunPathfinding()
+        {
+            if (lastShowDebug != showDebug)
+            {
+                pathNeedsUpdate = true;
+            }
+
+            if (!showDebug)
+            {
+                RunStandardPathfinding();
+            }
+            else
+            {
+                RunDebugPathfinding();
+            }
+        }
+
+        private void RunStandardPathfinding()
+        {
             if (runPathfinding && !lastRunPathfinding || runPathfinding && pathNeedsUpdate)
             {
-                CalculatePath();
+                CalculatePath(startPos);
             }
 
             if (runPathfinding)
             {
                 StepPath();
             }
+        }
 
-            UpdatePathProperties();
-            lastRunPathfinding = runPathfinding;
+        private void RunDebugPathfinding()
+        {
+            if (runPathfinding && !lastRunPathfinding || runPathfinding && pathNeedsUpdate)
+            {
+                CalculatePathStepwise(startPos);
+            }
+
+            if (path != null)
+            {
+                StepPath();
+                return;
+            }
+
+            var p = aStar.CalculatePathStepwise();
+
+            if (p != null)
+            {
+                path = p.ToInt2Arr();
+            }
+
+            SetDebugProperties();
         }
 
         private void StepPath()
@@ -112,7 +185,8 @@ namespace Bradds.Playground
 
                 if (pathIndex == path.Length - 1)
                 {
-                    CalculatePath(path[^1].ToVec2Int());
+                    startPos = path[^1].ToVec2Int();
+                    pathNeedsUpdate = true;
                 }
             }
         }
@@ -123,6 +197,7 @@ namespace Bradds.Playground
             SetMapProperties();
 
             pathNeedsUpdate = true;
+            startPos = null;
         }
 
         private void CalculatePath(Vector2Int? start = null)
@@ -141,6 +216,7 @@ namespace Bradds.Playground
                 }
             }
 
+            
             var aStar = new AStar(map);
             var p = new Vector2Int[0];
 
@@ -176,6 +252,61 @@ namespace Bradds.Playground
             SetPathProperties();
         }
 
+        private void CalculatePathStepwise(Vector2Int? start = null)
+        {
+            pathNeedsUpdate = false;
+            if (start == null)
+            {
+                while (true)
+                {
+                    var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    if (map.GetTile(vec).Passable)
+                    {
+                        start = vec;
+                        break;
+                    }
+                }
+            }
+
+            aStar = new AStar(map);
+
+            Vector2Int end = Vector2Int.zero;
+
+            while (true)
+            {
+
+                var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                if (vec != start && map.GetTile(vec).Passable)
+                {
+                    end = vec;
+                    break;
+                }
+            }
+
+            path = null;
+            aStar.InitCalculatePathStepwise(start.Value, end);
+
+                //while (true)
+                //{
+                //    p = aStar.CalculatePathStepwise();
+
+                //    var open = aStar.Open;
+                //    var closed = aStar.Closed;
+
+                //    if (p != null)
+                //    {
+                //        break;
+                //    }
+                //}
+                
+
+
+            Debug.Log($"Start: {start}, End: {end}");
+
+            pathIndex = 0;
+            SetPathProperties();
+        }
+
         private void UpdateMapProperties()
         {
             if (currentMapHashCode == GetMapConfigHashCode())
@@ -188,6 +319,7 @@ namespace Bradds.Playground
             SetMapProperties();
 
             pathNeedsUpdate = true;
+            startPos = null;
         }
 
         private void UpdatePathProperties()
@@ -199,6 +331,18 @@ namespace Bradds.Playground
 
             currentPathHashCode = GetPathConfigHashCode();
             SetPathProperties();
+        }
+
+        private void UpdateDebugProperties()
+        {
+            if (currentDebugHashCode == GetDebugConfigHashCode()) 
+            {
+                return; 
+            }
+
+            currentDebugHashCode = GetDebugConfigHashCode();
+
+            SetDebugProperties();
         }
 
         private void SetMapProperties()
@@ -233,13 +377,62 @@ namespace Bradds.Playground
             mapMaterial.SetBuffer(pathBufferId, pathBuffer);
             mapMaterial.SetInteger("_PathIndex", 0);
             mapMaterial.SetInteger("_PathCount", path.Length);
+            mapMaterial.SetInteger("_OpenCount", 0);
+            mapMaterial.SetInteger("_ClosedCount", 0);
             mapMaterial.SetInteger("_ShowPath", showPath && runPathfinding ? 1 : 0);
+        }
+
+        private void SetDebugProperties()
+        {
+            openBuffer?.Release();
+            closedBuffer?.Release();
+
+            //mapMaterial.SetInteger("_ShowDebug", showDebug && runPathfinding ? 1 : 0);
+
+            if (!(showDebug && runPathfinding))
+            {
+                return;
+            }
+
+            var open = aStar.Open.Select(t => t.Index.ToInt2()).ToArray();
+
+            if (open.Length > 0)
+            {
+                openBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None, open.Length, sizeof(int) * 2);
+                openBuffer.SetData(open);
+            }
+
+
+            var closed = aStar.Closed.Select(t => t.Index.ToInt2()).ToArray();
+
+            if (closed.Length > 0)
+            {
+                closedBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, GraphicsBuffer.UsageFlags.None, closed.Length, sizeof(int) * 2);
+                closedBuffer.SetData(closed);
+            }
+ 
+            mapMaterial.SetBuffer(openBufferId, openBuffer);
+            mapMaterial.SetBuffer(closedBufferId, closedBuffer);
+
+            mapMaterial.SetInteger("_OpenCount", open.Length);
+            mapMaterial.SetInteger("_ClosedCount", closed.Length);
+
+            mapMaterial.SetInteger("_ShowDebug", showDebug && runPathfinding ? 1 : 0);
         }
 
         private void OnDestroy()
         {
             this.mapBuffer?.Release();
             this.pathBuffer?.Release();
+            openBuffer?.Release();
+            closedBuffer?.Release();
+
+            mapMaterial.SetInteger("_PathIndex", 0);
+            mapMaterial.SetInteger("_PathCount", 0);
+            mapMaterial.SetInteger("_OpenCount", 0);
+            mapMaterial.SetInteger("_ClosedCount", 0);
+            mapMaterial.SetInteger("_ShowPath", 0);
+            mapMaterial.SetInteger("_ShowDebug", 0);
         }
 
         private int GetMapConfigHashCode()
@@ -250,6 +443,11 @@ namespace Bradds.Playground
         private int GetPathConfigHashCode()
         {
             return showPath.GetHashCode() * 3 + runPathfinding.GetHashCode() * 5;
+        }
+
+        private int GetDebugConfigHashCode()
+        {
+            return showDebug.GetHashCode();
         }
     }
 }

@@ -25,6 +25,10 @@ namespace Braddss.Pathfinding.Astar
 
         private Map map;
 
+        public IReadOnlyList<Tile> Open { get => open; }
+
+        public IReadOnlyList<Tile> Closed { get => closed; }
+
         public AStar(Map map)
         {
             this.map = map;
@@ -50,70 +54,105 @@ namespace Braddss.Pathfinding.Astar
 
             while (true)
             {
-                if (open.Count == 0)
+                var result = Step();
+
+                if (result != null)
                 {
-                    return new Vector2Int[0];
-                }
-
-                current = open[0];
-
-                for (int i = 1; i < open.Count; i++)
-                {
-                    var tile = open[i];
-                    if (tile.FCost < current.FCost)
-                    {
-                        current = tile;
-                    }
-                }
-
-                open.Remove(current);
-                closed.Add(current);
-
-                if (current.Index == end)
-                {
-                    var path = CalculatePath();
-
-                    for (int i = 0;i < open.Count; i++)
-                    {
-                        open[i].Clear();
-                    }
-
-                    for (int i = 0; i < closed.Count; i++)
-                    {
-                        closed[i].Clear();
-                    }
-
-                    open.Clear();
-                    closed.Clear();
-
-                    return path;
-                }
-
-
-                for (int i = 0; i < neighborDirs.Length; i++)
-                {
-                    var neighbor = map.GetTile(current.Index + neighborDirs[i]);
-
-                    if (!neighbor.Passable || closed.Contains(neighbor)) 
-                    {
-                        continue;
-                    }
-
-                    if (open.Contains(neighbor) && CalculateGCost(neighbor) + 1 >= neighbor.GCost)
-                    {
-                        continue;
-                    }
-
-                    neighbor.SetParent(current);
-                    CalculateCost(neighbor);
-                    if (!open.Contains(neighbor))
-                    {
-                        open.Add(neighbor);
-                    }
+                    return result;
                 }
             }
         }
 
+        public void InitCalculatePathStepwise(Vector2Int start, Vector2Int end)
+        {
+            Clear();
+            this.start = start;
+            this.end = end;
+
+            var startTile = map.GetTile(start);
+            open.Add(startTile);
+
+            for (int i = 0; i < neighborDirs.Length; i++)
+            {
+                var neighbor = map.GetTile(start + neighborDirs[i]);
+                neighbor.SetParent(startTile);
+                CalculateCost(neighbor);
+            }
+
+            CalculateCost(startTile);
+        }
+
+        public Vector2Int[] CalculatePathStepwise()
+        {
+            return Step();
+        }
+
+        private Vector2Int[] Step()
+        {
+            if (open.Count == 0)
+            {
+                return new Vector2Int[0];
+            }
+
+            current = open[0];
+
+            for (int i = 1; i < open.Count; i++)
+            {
+                var tile = open[i];
+                if (tile.FCost < current.FCost)
+                {
+                    current = tile;
+                }
+            }
+
+            open.Remove(current);
+            closed.Add(current);
+
+            if (current.Index == end)
+            {
+                var path = CalculatePath();
+
+                for (int i = 0; i < open.Count; i++)
+                {
+                    open[i].Clear();
+                }
+
+                for (int i = 0; i < closed.Count; i++)
+                {
+                    closed[i].Clear();
+                }
+
+                open.Clear();
+                closed.Clear();
+
+                return path;
+            }
+
+
+            for (int i = 0; i < neighborDirs.Length; i++)
+            {
+                var neighbor = map.GetTile(current.Index + neighborDirs[i]);
+
+                if (!neighbor.Passable || closed.Contains(neighbor))
+                {
+                    continue;
+                }
+
+                if (open.Contains(neighbor) && CalculateGCost(neighbor) + 1 >= neighbor.GCost)
+                {
+                    continue;
+                }
+
+                neighbor.SetParent(current);
+                CalculateCost(neighbor);
+                if (!open.Contains(neighbor))
+                {
+                    open.Add(neighbor);
+                }
+            }
+
+            return null;
+        }
         
         private void CalculateCost(Tile tile)
         {
