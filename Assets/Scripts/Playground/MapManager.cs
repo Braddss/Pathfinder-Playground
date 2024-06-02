@@ -1,5 +1,5 @@
 using Braddss.Pathfinding;
-using Braddss.Pathfinding.Astar;
+using Braddss.Pathfinding.Maps;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -205,6 +205,8 @@ namespace Bradds.Playground
 
                 ++DebugIndex;
 
+                Debug.Log(DebugIndex);
+
                 Vector2Int[] p = pathfinder.CalculatePathStepwise();
 
                 if (p != null)
@@ -247,30 +249,24 @@ namespace Bradds.Playground
                 }
             }
 
-
             var pathFinder = new Pathfinder(map);
-            Vector2Int[] p = new Vector2Int[0];
 
-            Vector2Int end = Vector2Int.zero;
-            int counter = 0;
+            Vector2Int end;
 
-            while (p.Length == 0 && counter++ < 10)
+            while (true)
             {
-                while (true)
+
+                Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                if (vec != start && map.GetTile(vec).Passable)
                 {
-
-                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
-                    if (vec != start && map.GetTile(vec).Passable)
-                    {
-                        end = vec;
-                        break;
-                    }
+                    end = vec;
+                    break;
                 }
-
-                p = pathFinder.CalculatePath(start.Value, end);
             }
 
-            if (counter == 11)
+            var p = pathFinder.CalculatePath(start.Value, end);
+
+            if (p.Length == 0)
             {
                 CalculatePath();
                 return;
@@ -301,7 +297,7 @@ namespace Bradds.Playground
 
             pathfinder = new Pathfinder(map);
 
-            Vector2Int end = Vector2Int.zero;
+            Vector2Int end;
 
             while (true)
             {

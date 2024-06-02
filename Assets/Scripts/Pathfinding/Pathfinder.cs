@@ -1,4 +1,5 @@
-﻿using Braddss.Pathfinding.Astar;
+﻿using Braddss.Pathfinding.Astars;
+using Braddss.Pathfinding.Maps;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,6 +29,9 @@ namespace Braddss.Pathfinding
             {
                 case PathfindingAlogrithm.AStar:
                     pathfinder = new AStar(map);
+                    break;
+                case PathfindingAlogrithm.AStarSimple:
+                    pathfinder = new AStarSimple(map);
                     break;
             }
         }

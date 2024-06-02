@@ -1,8 +1,9 @@
+using Braddss.Pathfinding.Maps;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Braddss.Pathfinding.AStarSimple
+namespace Braddss.Pathfinding.Astars
 {
     internal class AStarSimple : IPathfinder
     {

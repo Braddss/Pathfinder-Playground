@@ -2,7 +2,7 @@
 using TreeEditor;
 using UnityEngine;
 
-namespace Braddss.Pathfinding
+namespace Braddss.Pathfinding.Maps
 {
     public class Map
     {

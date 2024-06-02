@@ -1,8 +1,8 @@
-using System;
+using Braddss.Pathfinding.Maps;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Braddss.Pathfinding.Astar
+namespace Braddss.Pathfinding.Astars
 {
     internal class AStar : IPathfinder
     {
@@ -139,7 +139,6 @@ namespace Braddss.Pathfinding.Astar
                 return path;
             }
 
-
             for (int i = 0; i < neighborDirs.Length; i++)
             {
                 var neighbor = map.GetTile(current.Index + neighborDirs[i]);
@@ -149,7 +148,7 @@ namespace Braddss.Pathfinding.Astar
                     continue;
                 }
 
-                if (open.Contains(neighbor) && CalculateGCost(neighbor) + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
+                if (open.Contains(neighbor) && current.GCost + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
                 {
                     continue;
                 }
@@ -168,7 +167,7 @@ namespace Braddss.Pathfinding.Astar
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = (End - tile.Index).magnitude;
+            var hCost = CalculateHCost(tile);
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);
@@ -190,23 +189,35 @@ namespace Braddss.Pathfinding.Astar
             return cost;
         }
 
+        private float CalculateHCost(Tile tile)
+        {
+            var index = (End - tile.Index);
+
+            index = new Vector2Int(Mathf.Abs(index.x), Mathf.Abs(index.y));
+
+            var min = Mathf.Min(index.x, index.y);
+            var max = Mathf.Max(index.x, index.y);
+
+            return min * 1.41421356237f + (max - min);
+        }
+
         private float DistanceToNeighbor(Tile tile, Tile neighbor)
         {
-            return (tile.Index - neighbor.Index).magnitude;
-            //var index = tile.Index - neighbor.Index;
+            //return (tile.Index - neighbor.Index).magnitude;
+            var index = tile.Index - neighbor.Index;
 
-            //var temp = index.x != 0 ? 1 : 0 + index.y != 0 ? 1 : 0;
+            var temp = (index.x != 0 ? 1 : 0) + (index.y != 0 ? 1 : 0);
 
-            //if (temp == 1)
-            //{
-            //    return 1;
-            //}
-            //else if (temp == 2)
-            //{
-            //    return 1.41421356237f;
-            //}
+            if (temp == 1)
+            {
+                return 1;
+            }
+            else if (temp == 2)
+            {
+                return 1.41421356237f;
+            }
 
-            //return 0;
+            return 0;
         }
 
         private Vector2Int[] CalculatePath(Tile tile)
