@@ -1,6 +1,4 @@
-﻿using Braddss.Pathfinding;
-using System.Linq;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using TreeEditor;
 using UnityEngine;
 
@@ -10,7 +8,7 @@ namespace Braddss.Pathfinding
     {
         public Tile[] Tiles { get; private set; }
 
-        private Perlin perlin = new Perlin();
+        private readonly Perlin perlin = new Perlin();
 
         private Vector2Int size;
 
@@ -21,46 +19,34 @@ namespace Braddss.Pathfinding
 
             for (int i = 0; i < Tiles.Length; i++)
             {
-                var index = IndexToVec(i);
+                Vector2Int index = IndexToVec(i);
 
-                var neighborCount = 4;
-
-                if (index.x == 0 || index.x == size.x - 1)
-                {
-                    neighborCount -= 1;
-                }
-
-                if (index.y == 0 || index.y == size.y - 1)
-                {
-                    neighborCount -= 1;
-                }
-
-                var passable = perlin.OctaveNoise(index, config) < isoValue;
-                Tiles[i] = new Tile(index, passable, neighborCount);
+                bool passable = perlin.OctaveNoise(index, config) < isoValue;
+                Tiles[i] = new Tile(index, passable);
             }
         }
 
-        public Tile[] Neighbors(Tile tile)
-        {
-            var neighbors = new Tile[4]; //tile.NeighborCount];
+        //public Tile[] Neighbors(Tile tile)
+        //{
+        //    Tile[] neighbors = new Tile[4]; //tile.NeighborCount];
 
-            var directions = new Vector2Int[]
-            {
-                Vector2Int.down,
-                Vector2Int.left,
-                Vector2Int.up,
-                Vector2Int.right,
-            };
+        //    Vector2Int[] directions = new Vector2Int[]
+        //    {
+        //        Vector2Int.down,
+        //        Vector2Int.left,
+        //        Vector2Int.up,
+        //        Vector2Int.right,
+        //    };
 
 
-            for (int i = 0; i < directions.Length; i++) 
-            {
-                var neighborIndex = tile.Index + directions[i];
-                neighbors[i] = IndexInBounds(neighborIndex) ? Tiles[ToIndex(neighborIndex)] : Tile.OOB();
-            }
+        //    for (int i = 0; i < directions.Length; i++)
+        //    {
+        //        Vector2Int neighborIndex = tile.Index + directions[i];
+        //        neighbors[i] = IndexInBounds(neighborIndex) ? Tiles[ToIndex(neighborIndex)] : Tile.OOB();
+        //    }
 
-            return Tiles;
-        }
+        //    return Tiles;
+        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tile GetTile(Vector2Int index)
@@ -77,7 +63,7 @@ namespace Braddss.Pathfinding
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ToIndex(Vector2Int vec)
         {
-            return vec.x + vec.y * size.x;
+            return vec.x + (vec.y * size.x);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

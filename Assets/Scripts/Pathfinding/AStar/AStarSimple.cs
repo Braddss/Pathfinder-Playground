@@ -2,20 +2,16 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Braddss.Pathfinding.Astar
+namespace Braddss.Pathfinding.AStarSimple
 {
-    internal class AStar : IPathfinder
+    internal class AStarSimple : IPathfinder
     {
         private static Vector2Int[] neighborDirs = new Vector2Int[]
         {
             Vector2Int.down,
-            Vector2Int.down + Vector2Int.left,
             Vector2Int.left,
-            Vector2Int.left + Vector2Int.up,
             Vector2Int.up,
-            Vector2Int.up + Vector2Int.right,
             Vector2Int.right,
-            Vector2Int.right + Vector2Int.down,
         };
 
         private List<Tile> open = new List<Tile>();
@@ -33,14 +29,14 @@ namespace Braddss.Pathfinding.Astar
 
         public IReadOnlyList<Tile> Closed { get => closed; }
 
-        public AStar(Map map)
+        public AStarSimple(Map map)
         {
             this.map = map;
         }
 
         public Vector2Int[] CalculatePath(Vector2Int start, Vector2Int end)
         {
-            InitAStar(start, end);
+            InitAStarSimple(start, end);
 
             while (true)
             {
@@ -55,7 +51,7 @@ namespace Braddss.Pathfinding.Astar
 
         public void InitCalculatePathStepwise(Vector2Int start, Vector2Int end)
         {
-            InitAStar(start, end);
+            InitAStarSimple(start, end);
         }
 
         public Vector2Int[] CalculatePathStepwise()
@@ -73,7 +69,7 @@ namespace Braddss.Pathfinding.Astar
             return CalculatePath(current);
         }
 
-        private void InitAStar(Vector2Int start, Vector2Int end)
+        private void InitAStarSimple(Vector2Int start, Vector2Int end)
         {
             Clear();
             this.Start = start;
@@ -149,7 +145,7 @@ namespace Braddss.Pathfinding.Astar
                     continue;
                 }
 
-                if (open.Contains(neighbor) && CalculateGCost(neighbor) + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
+                if (open.Contains(neighbor) && CalculateGCost(neighbor) + 1 >= neighbor.GCost)
                 {
                     continue;
                 }
@@ -168,7 +164,7 @@ namespace Braddss.Pathfinding.Astar
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = (End - tile.Index).magnitude;
+            var hCost = Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y);
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);
@@ -181,32 +177,12 @@ namespace Braddss.Pathfinding.Astar
 
             while (tile != startTile)
             {
-                cost += DistanceToNeighbor(tile, tile.Parent);
-
                 tile = tile.Parent;
 
+                cost += 1;
             }
 
             return cost;
-        }
-
-        private float DistanceToNeighbor(Tile tile, Tile neighbor)
-        {
-            return (tile.Index - neighbor.Index).magnitude;
-            //var index = tile.Index - neighbor.Index;
-
-            //var temp = index.x != 0 ? 1 : 0 + index.y != 0 ? 1 : 0;
-
-            //if (temp == 1)
-            //{
-            //    return 1;
-            //}
-            //else if (temp == 2)
-            //{
-            //    return 1.41421356237f;
-            //}
-
-            //return 0;
         }
 
         private Vector2Int[] CalculatePath(Tile tile)

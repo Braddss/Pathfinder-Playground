@@ -1,9 +1,6 @@
 using Braddss.Pathfinding;
 using Braddss.Pathfinding.Astar;
-using Codice.Client.BaseCommands.Update.Fast.Transformers;
-using System;
 using System.Linq;
-using Unity.Mathematics;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -15,15 +12,15 @@ namespace Bradds.Playground
 
         public enum PassableState
         {
-            XPassable   = 1,
-            Passable    = 2,
-            Player      = 3,
-            End         = 4,
-            Path        = 5,
-            Open        = 6,
-            Closed      = 7,
-            Border      = 8,
-            Hover       = 4096,
+            XPassable = 1,
+            Passable = 2,
+            Player = 3,
+            End = 4,
+            Path = 5,
+            Open = 6,
+            Closed = 7,
+            Border = 8,
+            Hover = 4096,
         }
 
         [SerializeField]
@@ -87,7 +84,7 @@ namespace Bradds.Playground
 
         private Map map;
         private Vector2Int[] path;
-        private AStar aStar;
+        private IPathfinder pathfinder;
 
         private int currentMapHashCode;
 
@@ -104,8 +101,8 @@ namespace Bradds.Playground
         void Start()
         {
             currentMapHashCode = GetMapConfigHashCode();
-            this.map = new Map(mapSize, perlinConfig, isoValue);
-            this.mapBufferId = Shader.PropertyToID("_MapBuffer");
+            map = new Map(mapSize, perlinConfig, isoValue);
+            mapBufferId = Shader.PropertyToID("_MapBuffer");
 
             SetMapProperties();
         }
@@ -116,7 +113,7 @@ namespace Bradds.Playground
         void Update()
         {
             UpdateMapProperties();
-            
+
             if (runPathfinding)
             {
                 RunPathfinding();
@@ -148,7 +145,7 @@ namespace Bradds.Playground
 
         private void RunStandardPathfinding()
         {
-            if (runPathfinding && !lastRunPathfinding || runPathfinding && pathNeedsUpdate)
+            if ((runPathfinding && !lastRunPathfinding) || (runPathfinding && pathNeedsUpdate))
             {
                 CalculatePath(startPos);
             }
@@ -161,7 +158,7 @@ namespace Bradds.Playground
 
         private void RunDebugPathfinding()
         {
-            if (runPathfinding && !lastRunPathfinding || runPathfinding && pathNeedsUpdate)
+            if ((runPathfinding && !lastRunPathfinding) || (runPathfinding && pathNeedsUpdate))
             {
                 CalculatePathStepwise(startPos);
             }
@@ -173,8 +170,6 @@ namespace Bradds.Playground
             }
 
             StepDebug();
-
-            //SetDebugProperties();
         }
 
         private void StepPath()
@@ -210,7 +205,7 @@ namespace Bradds.Playground
 
                 ++DebugIndex;
 
-                var p = aStar.CalculatePathStepwise();
+                Vector2Int[] p = pathfinder.CalculatePathStepwise();
 
                 if (p != null)
                 {
@@ -243,7 +238,7 @@ namespace Bradds.Playground
             {
                 while (true)
                 {
-                    var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
                     if (map.GetTile(vec).Passable)
                     {
                         start = vec;
@@ -252,19 +247,19 @@ namespace Bradds.Playground
                 }
             }
 
-            
-            var aStar = new AStar(map);
-            var p = new Vector2Int[0];
+
+            var pathFinder = new Pathfinder(map);
+            Vector2Int[] p = new Vector2Int[0];
 
             Vector2Int end = Vector2Int.zero;
-            var counter = 0;
+            int counter = 0;
 
             while (p.Length == 0 && counter++ < 10)
             {
                 while (true)
                 {
 
-                    var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
                     if (vec != start && map.GetTile(vec).Passable)
                     {
                         end = vec;
@@ -272,7 +267,7 @@ namespace Bradds.Playground
                     }
                 }
 
-                p = aStar.CalculatePath(start.Value, end);
+                p = pathFinder.CalculatePath(start.Value, end);
             }
 
             if (counter == 11)
@@ -295,7 +290,7 @@ namespace Bradds.Playground
             {
                 while (true)
                 {
-                    var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
                     if (map.GetTile(vec).Passable)
                     {
                         start = vec;
@@ -304,14 +299,14 @@ namespace Bradds.Playground
                 }
             }
 
-            aStar = new AStar(map);
+            pathfinder = new Pathfinder(map);
 
             Vector2Int end = Vector2Int.zero;
 
             while (true)
             {
 
-                var vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
                 if (vec != start && map.GetTile(vec).Passable)
                 {
                     end = vec;
@@ -320,27 +315,11 @@ namespace Bradds.Playground
             }
 
             path = null;
-            aStar.InitCalculatePathStepwise(start.Value, end);
-
-                //while (true)
-                //{
-                //    p = aStar.CalculatePathStepwise();
-
-                //    var open = aStar.Open;
-                //    var closed = aStar.Closed;
-
-                //    if (p != null)
-                //    {
-                //        break;
-                //    }
-                //}
-                
-
+            pathfinder.InitCalculatePathStepwise(start.Value, end);
 
             Debug.Log($"Start: {start}, End: {end}");
 
             PathIndex = 0;
-            //SetPathProperties(); 
         }
 
         private void UpdateMapProperties()
@@ -351,7 +330,7 @@ namespace Bradds.Playground
             }
 
             currentMapHashCode = GetMapConfigHashCode();
-            this.map = new Map(mapSize, perlinConfig, isoValue);
+            map = new Map(mapSize, perlinConfig, isoValue);
             SetMapProperties();
 
             pathNeedsUpdate = true;
@@ -360,7 +339,7 @@ namespace Bradds.Playground
 
         private void SetMapProperties()
         {
-            var bufferData = this.map.Tiles.Select(tile => tile.Passable ? PassableState.Passable : PassableState.XPassable).ToArray();
+            PassableState[] bufferData = map.Tiles.Select(tile => tile.Passable ? PassableState.Passable : PassableState.XPassable).ToArray();
 
             if (showDebug)
             {
@@ -392,13 +371,13 @@ namespace Bradds.Playground
                 return;
             }
 
-            var start = map.ToIndex(path[PathIndex]);
-            var end = map.ToIndex(path[^1]);
+            int start = map.ToIndex(path[PathIndex]);
+            int end = map.ToIndex(path[^1]);
 
             states[start] = PassableState.Player;
             states[end] = PassableState.End;
 
-            for(int i = PathIndex + 1; i < path.Length - 1; i++)
+            for (int i = PathIndex + 1; i < path.Length - 1; i++)
             {
                 states[map.ToIndex(path[i])] = PassableState.Path;
             }
@@ -406,14 +385,14 @@ namespace Bradds.Playground
 
         private void ApplyDebug(PassableState[] states)
         {
-            if (aStar == null || path != null)
+            if (pathfinder == null || path != null)
             {
                 return;
             }
 
-            var open = aStar.Open.Select(t => map.ToIndex(t.Index)).ToArray();
+            int[] open = pathfinder.Open.Select(t => map.ToIndex(t.Index)).ToArray();
 
-            var closed = aStar.Closed.Select(t => map.ToIndex(t.Index)).ToArray();
+            int[] closed = pathfinder.Closed.Select(t => map.ToIndex(t.Index)).ToArray();
 
             for (int i = 0; i < open.Length; i++)
             {
@@ -425,10 +404,10 @@ namespace Bradds.Playground
                 states[closed[i]] = PassableState.Closed;
             }
 
-            var start = map.ToIndex(aStar.Start);
-            var end = map.ToIndex(aStar.End);
+            int start = map.ToIndex(pathfinder.Start);
+            int end = map.ToIndex(pathfinder.End);
 
-            var tempPath = aStar.GetTempPath();
+            Vector2Int[] tempPath = pathfinder.GetTempPath();
 
             states[start] = PassableState.Player;
             states[end] = PassableState.End;
@@ -441,7 +420,7 @@ namespace Bradds.Playground
 
         private void OnDestroy()
         {
-            this.mapBuffer?.Release();
+            mapBuffer?.Release();
         }
 
         private int GetMapConfigHashCode()

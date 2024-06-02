@@ -4,7 +4,6 @@ namespace Braddss.Pathfinding
 {
     public class Tile
     {
-        private Tile[] neighbors = new Tile[4];
         public Tile Parent { get; private set; }
 
         public Vector2Int ParentDir { get; private set; } = Vector2Int.zero;
@@ -13,25 +12,21 @@ namespace Braddss.Pathfinding
 
         public Vector2Int Index { get; private set; }
 
-        public int GCost { get; private set; }
+        public float GCost { get; private set; }
 
-        public int HCost { get; private set; }
+        public float HCost { get; private set; }
 
-        public int FCost { get; private set; }
+        public float FCost { get; private set; }
 
-        public int NeighborCount { get; private set; }
-
-        public Tile(Vector2Int index, bool passable, int neighborCount)
+        public Tile(Vector2Int index, bool passable)
         {
             this.Index = index;
             this.Passable = passable;
-            this.NeighborCount = neighborCount;
         }
 
         private Tile()
         {
             this.Passable = false;
-            this.NeighborCount = 1;
         }
 
         public static Tile OOB()
@@ -39,29 +34,21 @@ namespace Braddss.Pathfinding
             return new Tile();
         }
 
-        public void SetParent(Tile parent)
+        public void SetParent(Tile parent, Vector2Int[] directions)
         {
             this.Parent = parent;
 
-            if (parent.Index == this.Index + Vector2Int.down)
+            for (int i = 0; i < directions.Length; i++)
             {
-                ParentDir = Vector2Int.down;
-            }
-            else if (parent.Index == this.Index + Vector2Int.left)
-            {
-                ParentDir = Vector2Int.left;
-            }
-            else if (parent.Index == this.Index + Vector2Int.up)
-            {
-                ParentDir = Vector2Int.up;
-            }
-            else if (parent.Index == this.Index + Vector2Int.right)
-            {
-                ParentDir = Vector2Int.right;
+                if (parent.Index == this.Index + directions[i])
+                {
+                    ParentDir = directions[i];
+                    break;
+                }
             }
         }
 
-        public void SetCosts(int gCost, int hCost, int fCost)
+        public void SetCosts(float gCost, float hCost, float fCost)
         {
             this.GCost = gCost;
             this.HCost = hCost;
@@ -75,7 +62,6 @@ namespace Braddss.Pathfinding
             HCost = 0;
             Parent = null;
             ParentDir = Vector2Int.zero;
-            neighbors = new Tile[4];
         }
     }
 }
