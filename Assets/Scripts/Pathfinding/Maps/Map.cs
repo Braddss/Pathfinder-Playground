@@ -1,5 +1,8 @@
-﻿using System.Runtime.CompilerServices;
+﻿using Braddss.Pathfinding.Jobs;
+using System.Runtime.CompilerServices;
 using TreeEditor;
+using Unity.Collections;
+using Unity.Jobs;
 using UnityEngine;
 
 namespace Braddss.Pathfinding.Maps
@@ -8,7 +11,7 @@ namespace Braddss.Pathfinding.Maps
     {
         public Tile[] Tiles { get; private set; }
 
-        private readonly Perlin perlin = new Perlin();
+        private readonly Perlin perlin;
 
         private Vector2Int size;
 
@@ -17,36 +20,49 @@ namespace Braddss.Pathfinding.Maps
             this.size = size;
             Tiles = new Tile[size.x * size.y];
 
+            if (config.frequency == 0)
+            {
+                for (int i = 0; i < Tiles.Length; i++)
+                {
+                    Vector2Int index = IndexToVec(i);
+                    Tiles[i] = new Tile(index, true);
+                }
+
+                return;
+            }
+
+            var passableArr = new NativeArray<bool>(size.x * size.y, Allocator.TempJob);
+
+            perlin = new Perlin(config.seed);
+
+            var job = new MapJob
+            {
+                tiles = passableArr,
+                size = size,
+                config = config,
+                perlin = perlin,
+                isoValue = isoValue,
+            };
+
+            job.Schedule(passableArr.Length, 16).Complete();
+
+
+            //for (int i = 0; i < Tiles.Length; i++)
+            //{
+            //    Vector2Int index = IndexToVec(i);
+
+            //    bool passable = perlin.OctaveNoise(index, config) < isoValue;
+            //    Tiles[i] = new Tile(index, passable);
+            //}
+
             for (int i = 0; i < Tiles.Length; i++)
             {
                 Vector2Int index = IndexToVec(i);
-
-                bool passable = perlin.OctaveNoise(index, config) < isoValue;
-                Tiles[i] = new Tile(index, passable);
+                Tiles[i] = new Tile(index, passableArr[i]);
             }
+
+            passableArr.Dispose();
         }
-
-        //public Tile[] Neighbors(Tile tile)
-        //{
-        //    Tile[] neighbors = new Tile[4]; //tile.NeighborCount];
-
-        //    Vector2Int[] directions = new Vector2Int[]
-        //    {
-        //        Vector2Int.down,
-        //        Vector2Int.left,
-        //        Vector2Int.up,
-        //        Vector2Int.right,
-        //    };
-
-
-        //    for (int i = 0; i < directions.Length; i++)
-        //    {
-        //        Vector2Int neighborIndex = tile.Index + directions[i];
-        //        neighbors[i] = IndexInBounds(neighborIndex) ? Tiles[ToIndex(neighborIndex)] : Tile.OOB();
-        //    }
-
-        //    return Tiles;
-        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tile GetTile(Vector2Int index)
