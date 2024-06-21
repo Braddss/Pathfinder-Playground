@@ -12,11 +12,11 @@ namespace Braddss.Pathfinding
 
         public Vector2Int Index { get; private set; }
 
-        public float GCost { get; private set; }
+        public int GCost { get; private set; }
 
-        public float HCost { get; private set; }
+        public int HCost { get; private set; }
 
-        public float FCost { get; private set; }
+        public int FCost { get; private set; }
 
         public Tile(Vector2Int index, bool passable)
         {
@@ -48,7 +48,7 @@ namespace Braddss.Pathfinding
             }
         }
 
-        public void SetCosts(float gCost, float hCost, float fCost)
+        public void SetCosts(int gCost, int hCost, int fCost)
         {
             this.GCost = gCost;
             this.HCost = hCost;

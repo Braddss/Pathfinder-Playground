@@ -146,7 +146,7 @@ namespace Braddss.Pathfinding.Astars
                     continue;
                 }
 
-                if (open.Contains(neighbor) && CalculateGCost(neighbor) + 1 >= neighbor.GCost)
+                if (open.Contains(neighbor) && current.GCost + 1>= neighbor.GCost)
                 {
                     continue;
                 }
@@ -171,19 +171,14 @@ namespace Braddss.Pathfinding.Astars
             tile.SetCosts(gCost, hCost, fCost);
         }
 
-        private float CalculateGCost(Tile tile)
+        private int CalculateGCost(Tile tile)
         {
-            float cost = 0;
-            var startTile = map.GetTile(Start);
-
-            while (tile != startTile)
+            if (tile.Parent == null)
             {
-                tile = tile.Parent;
-
-                cost += 1;
+                return 0;
             }
 
-            return cost;
+            return tile.Parent.GCost + 1;
         }
 
         private Vector2Int[] CalculatePath(Tile tile)

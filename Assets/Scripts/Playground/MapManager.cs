@@ -2,6 +2,7 @@ using Braddss.Pathfinding;
 using Braddss.Pathfinding.Maps;
 using System.Linq;
 using UnityEngine;
+using static Braddss.Pathfinding.Pathfinder;
 using Random = UnityEngine.Random;
 
 namespace Bradds.Playground
@@ -22,6 +23,9 @@ namespace Bradds.Playground
             Border = 8,
             Hover = 4096,
         }
+
+        [SerializeField]
+        private PathfindingAlogrithm algorithm;
 
         [SerializeField]
         private Vector2Int mapSize = new Vector2Int(20, 20);
@@ -86,7 +90,9 @@ namespace Bradds.Playground
         private Vector2Int[] path;
         private IPathfinder pathfinder;
 
-        private int currentMapHashCode;
+        private int currentMapConfigHashCode;
+
+        private int currentMapDataHashCode;
 
         public Vector2Int MapSize { get => mapSize; }
 
@@ -100,7 +106,8 @@ namespace Bradds.Playground
         // Start is called before the first frame update
         void Start()
         {
-            currentMapHashCode = GetMapConfigHashCode();
+            currentMapConfigHashCode = GetMapConfigHashCode();
+            currentMapDataHashCode = GetMapDataHashCode();
             map = new Map(mapSize, perlinConfig, isoValue);
             mapBufferId = Shader.PropertyToID("_MapBuffer");
 
@@ -147,7 +154,10 @@ namespace Bradds.Playground
         {
             if ((runPathfinding && !lastRunPathfinding) || (runPathfinding && pathNeedsUpdate))
             {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 CalculatePath(startPos);
+                sw.Stop();
+                Debug.Log(sw.Elapsed);
             }
 
             if (runPathfinding)
@@ -196,32 +206,44 @@ namespace Bradds.Playground
         {
             stepTimer += Time.deltaTime;
 
-            if (stepTimer > speed)
+            if (stepTimer < speed)
             {
-                if (speed > 0)
-                {
-                    stepTimer %= speed;
-                }
+                return;
+            }
 
-                ++DebugIndex;
+            var count = 1;
+            if (speed > 0)
+            {
+                count = Mathf.Max((int) (stepTimer / speed), 1);
+                stepTimer %= speed;
+            }
 
-                Debug.Log(DebugIndex);
+            for (int i = 0; i < count; i++)
+            {
+                
 
                 Vector2Int[] p = pathfinder.CalculatePathStepwise();
 
-                if (p != null)
+                if (p == null)
                 {
-                    if (p.Length == 0)
-                    {
-                        pathNeedsUpdate = true;
-                        startPos = null;
-                    }
-                    else
-                    {
-                        path = p;
-                    }
+                    continue;
                 }
+
+                if (p.Length == 0)
+                {
+                    pathNeedsUpdate = true;
+                    startPos = null;
+                }
+                else
+                {
+                    path = p;
+                }
+
+                break;
             }
+
+            Debug.Log(DebugIndex);
+            ++DebugIndex;
         }
 
         public void SetTile(Vector2Int index, PassableState state)
@@ -249,7 +271,7 @@ namespace Bradds.Playground
                 }
             }
 
-            var pathFinder = new Pathfinder(map);
+            var pathFinder = new Pathfinder(map, algorithm);
 
             Vector2Int end;
 
@@ -272,11 +294,10 @@ namespace Bradds.Playground
                 return;
             }
 
-            Debug.Log($"Start: {start}, End: {end}");
+            //Debug.Log($"Start: {start}, End: {end}");
             path = p;
 
             PathIndex = 0;
-            //SetPathProperties();
         }
 
         private void CalculatePathStepwise(Vector2Int? start = null)
@@ -295,7 +316,7 @@ namespace Bradds.Playground
                 }
             }
 
-            pathfinder = new Pathfinder(map);
+            pathfinder = new Pathfinder(map, algorithm);
 
             Vector2Int end;
 
@@ -320,13 +341,21 @@ namespace Bradds.Playground
 
         private void UpdateMapProperties()
         {
-            if (currentMapHashCode == GetMapConfigHashCode())
+            var mapConfigHash = GetMapConfigHashCode();
+            var mapDataHash = GetMapDataHashCode();
+            if (currentMapConfigHashCode == mapConfigHash && currentMapDataHashCode == mapDataHash)
             {
                 return;
             }
 
-            currentMapHashCode = GetMapConfigHashCode();
-            map = new Map(mapSize, perlinConfig, isoValue);
+            if (mapConfigHash != currentMapConfigHashCode)
+            {
+                map = new Map(mapSize, perlinConfig, isoValue);
+            }
+
+            currentMapConfigHashCode = mapConfigHash;
+            currentMapDataHashCode = mapDataHash;
+
             SetMapProperties();
 
             pathNeedsUpdate = true;
@@ -421,7 +450,12 @@ namespace Bradds.Playground
 
         private int GetMapConfigHashCode()
         {
-            return mapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7 + showPath.GetHashCode() * 11 + runPathfinding.GetHashCode() * 13 + showDebug.GetHashCode() * 17;
+            return mapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7;
+        }
+
+        private int GetMapDataHashCode()
+        {
+            return showPath.GetHashCode() * 11 + runPathfinding.GetHashCode() * 13 + showDebug.GetHashCode() * 17;
         }
     }
 }

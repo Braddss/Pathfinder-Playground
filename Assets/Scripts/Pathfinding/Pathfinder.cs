@@ -1,5 +1,6 @@
 ﻿using Braddss.Pathfinding.Astars;
 using Braddss.Pathfinding.Maps;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace Braddss.Pathfinding
 {
     public class Pathfinder : IPathfinder
     {
+        [Serializable]
         public enum PathfindingAlogrithm
         {
             AStar,
