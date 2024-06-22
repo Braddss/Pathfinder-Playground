@@ -28,7 +28,7 @@ namespace Bradds.Playground
         private PathfindingAlogrithm algorithm;
 
         [SerializeField]
-        private Vector2Int mapSize = new Vector2Int(20, 20);
+        private int mapSize = 20;
 
         [SerializeField]
         private PerlinConfig perlinConfig;
@@ -45,6 +45,9 @@ namespace Bradds.Playground
 
         [SerializeField]
         private bool runPathfinding = false;
+
+        [SerializeField]
+        private bool stepPath = false;
         private bool lastRunPathfinding = false;
 
         private bool pathNeedsUpdate = false;
@@ -94,7 +97,7 @@ namespace Bradds.Playground
 
         private int currentMapDataHashCode;
 
-        public Vector2Int MapSize { get => mapSize; }
+        public Vector2Int MapSize { get => new Vector2Int(mapSize, mapSize); }
 
         public Material MapMaterial { get => mapMaterial; }
 
@@ -108,7 +111,7 @@ namespace Bradds.Playground
         {
             currentMapConfigHashCode = GetMapConfigHashCode();
             currentMapDataHashCode = GetMapDataHashCode();
-            map = new Map(mapSize, perlinConfig, isoValue);
+            map = new Map(MapSize, perlinConfig, isoValue);
             mapBufferId = Shader.PropertyToID("_MapBuffer");
 
             SetMapProperties();
@@ -185,6 +188,21 @@ namespace Bradds.Playground
         private void StepPath()
         {
             stepTimer += Time.deltaTime;
+
+
+            if (!stepPath)
+            {
+                if (stepTimer > 1)
+                {
+                    startPos = path[^1];
+                    pathNeedsUpdate = true;
+                    stepTimer = 0;
+                }
+
+                return;
+            }
+
+
             if (stepTimer > speed)
             {
                 if (speed > 0)
@@ -198,6 +216,7 @@ namespace Bradds.Playground
                 {
                     startPos = path[^1];
                     pathNeedsUpdate = true;
+                    stepTimer = 0;
                 }
             }
         }
@@ -239,6 +258,8 @@ namespace Bradds.Playground
                     path = p;
                 }
 
+                stepTimer = 0;
+
                 break;
             }
 
@@ -262,7 +283,7 @@ namespace Bradds.Playground
             {
                 while (true)
                 {
-                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                     if (map.GetTile(vec).Passable)
                     {
                         start = vec;
@@ -278,7 +299,7 @@ namespace Bradds.Playground
             while (true)
             {
 
-                Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                 if (vec != start && map.GetTile(vec).Passable)
                 {
                     end = vec;
@@ -307,7 +328,7 @@ namespace Bradds.Playground
             {
                 while (true)
                 {
-                    Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                    Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                     if (map.GetTile(vec).Passable)
                     {
                         start = vec;
@@ -323,7 +344,7 @@ namespace Bradds.Playground
             while (true)
             {
 
-                Vector2Int vec = new Vector2Int(Random.Range(0, mapSize.x), Random.Range(0, mapSize.y));
+                Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                 if (vec != start && map.GetTile(vec).Passable)
                 {
                     end = vec;
@@ -350,7 +371,7 @@ namespace Bradds.Playground
 
             if (mapConfigHash != currentMapConfigHashCode)
             {
-                map = new Map(mapSize, perlinConfig, isoValue);
+                map = new Map(MapSize, perlinConfig, isoValue);
             }
 
             currentMapConfigHashCode = mapConfigHash;
@@ -385,8 +406,8 @@ namespace Bradds.Playground
 
             mapMaterial.SetBuffer(mapBufferId, mapBuffer);
 
-            mapMaterial.SetInteger("_SizeX", mapSize.x);
-            mapMaterial.SetInteger("_SizeY", mapSize.y);
+            mapMaterial.SetInteger("_SizeX", MapSize.x);
+            mapMaterial.SetInteger("_SizeY", MapSize.y);
         }
 
         private void ApplyPath(PassableState[] states)
@@ -450,7 +471,7 @@ namespace Bradds.Playground
 
         private int GetMapConfigHashCode()
         {
-            return mapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7;
+            return MapSize.GetHashCode() * 3 + perlinConfig.GetHashCode() * 5 + isoValue.GetHashCode() * 7;
         }
 
         private int GetMapDataHashCode()
