@@ -1,43 +1,55 @@
-using Braddss.Pathfinding.Maps;
+﻿using Braddss.Pathfinding.Maps;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
+using static Codice.Client.Common.WebApi.WebApiEndpoints;
 
-namespace Braddss.Pathfinding.Astars
+namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 {
-    internal class AStarSimple : IPathfinder
+    internal class Dijkstra : IPathfinder
     {
         private static Vector2Int[] neighborDirs = new Vector2Int[]
         {
             Vector2Int.down,
+            Vector2Int.down + Vector2Int.left,
             Vector2Int.left,
+            Vector2Int.left + Vector2Int.up,
             Vector2Int.up,
+            Vector2Int.up + Vector2Int.right,
             Vector2Int.right,
+            Vector2Int.right + Vector2Int.down,
         };
 
-        private List<Tile> open = new List<Tile>();
-        private List<Tile> closed = new List<Tile>();
+        private readonly List<Tile> open = new List<Tile>();
+        private readonly List<Tile> closed = new List<Tile>();
+        private readonly HashSet<Tile> openSet = new HashSet<Tile>();
+        private readonly HashSet<Tile> closedSet = new HashSet<Tile>();
+
         private List<Vector2Int> pathDirections = new List<Vector2Int>();
 
         private Tile current = null;
 
         public Vector2Int Start { get; private set; }
+        
         public Vector2Int End { get; private set; }
 
         private readonly Map map;
-
+        
         public IReadOnlyList<Tile> Open { get => open; }
 
         public IReadOnlyList<Tile> Closed { get => closed; }
 
-        public AStarSimple(Map map)
+        public Dijkstra(Map map)
         {
             this.map = map;
         }
 
         public Vector2Int[] CalculatePath(Vector2Int start, Vector2Int end)
         {
-            InitAStarSimple(start, end);
+            Init(start, end);
 
             while (true)
             {
@@ -48,11 +60,6 @@ namespace Braddss.Pathfinding.Astars
                     return result;
                 }
             }
-        }
-
-        public void InitCalculatePathStepwise(Vector2Int start, Vector2Int end)
-        {
-            InitAStarSimple(start, end);
         }
 
         public Vector2Int[] CalculatePathStepwise()
@@ -70,14 +77,22 @@ namespace Braddss.Pathfinding.Astars
             return CalculatePath(current);
         }
 
-        private void InitAStarSimple(Vector2Int start, Vector2Int end)
+        public void InitCalculatePathStepwise(Vector2Int start, Vector2Int end)
+        {
+            Init(start, end);
+        }
+
+        private void Init(Vector2Int start, Vector2Int end)
         {
             Clear();
+
             this.Start = start;
             this.End = end;
 
             var startTile = map.GetTile(start);
+
             open.Add(startTile);
+            openSet.Add(startTile);
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
@@ -102,19 +117,21 @@ namespace Braddss.Pathfinding.Astars
                 return new Vector2Int[0];
             }
 
-            current = open[0];
+            current = open[^1];
 
-            for (int i = 1; i < open.Count; i++)
+            for (int i = open.Count - 2; i >= 0; i--)
             {
                 var tile = open[i];
-                if (tile.FCost < current.FCost)
+                if (tile.GCost < current.GCost)
                 {
                     current = tile;
                 }
             }
 
             open.Remove(current);
+            openSet.Remove(current);
             closed.Add(current);
+            closedSet.Add(current);
 
             if (current.Index == End)
             {
@@ -132,53 +149,36 @@ namespace Braddss.Pathfinding.Astars
 
                 open.Clear();
                 closed.Clear();
+                openSet.Clear();
+                closedSet.Clear();
 
                 return path;
             }
-
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
                 var neighbor = map.GetTile(current.Index + neighborDirs[i]);
 
-                if (!neighbor.Passable || closed.Contains(neighbor))
+                if (!neighbor.Passable || closedSet.Contains(neighbor))
                 {
                     continue;
                 }
 
-                if (open.Contains(neighbor) && current.GCost + 1>= neighbor.GCost)
+                if (openSet.Contains(neighbor) && current.GCost + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
                 {
                     continue;
                 }
 
                 neighbor.SetParent(current);
                 CalculateCost(neighbor);
-                if (!open.Contains(neighbor))
+                if (!openSet.Contains(neighbor))
                 {
                     open.Add(neighbor);
+                    openSet.Add(neighbor);
                 }
             }
 
             return null;
-        }
-        
-        private void CalculateCost(Tile tile)
-        {
-            var gCost = CalculateGCost(tile);
-            var hCost = Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y);
-            var fCost = gCost + hCost;
-
-            tile.SetCosts(gCost, hCost, fCost);
-        }
-
-        private int CalculateGCost(Tile tile)
-        {
-            if (tile.Parent == null)
-            {
-                return 0;
-            }
-
-            return tile.Parent.GCost + 1;
         }
 
         private Vector2Int[] CalculatePath(Tile tile)
@@ -215,10 +215,42 @@ namespace Braddss.Pathfinding.Astars
             return path;
         }
 
+        private void CalculateCost(Tile tile)
+        {
+            var gCost = 0;
+
+            if (tile.Parent != null)
+            {
+                gCost = tile.Parent.GCost + DistanceToNeighbor(tile, tile.Parent);
+            }
+
+            tile.SetCosts(gCost, 0, 0);
+        }
+
+        private int DistanceToNeighbor(Tile tile, Tile neighbor)
+        {
+            var index = tile.Index - neighbor.Index;
+
+            var temp = (index.x != 0 ? 1 : 0) + (index.y != 0 ? 1 : 0);
+
+            if (temp == 1)
+            {
+                return 1000;
+            }
+            else if (temp == 2)
+            {
+                return 1414;
+            }
+
+            return 1000;
+        }
+
         private void Clear()
         {
             open.Clear();
             closed.Clear();
+            openSet.Clear();
+            closedSet.Clear();
             pathDirections.Clear();
 
             current = null;

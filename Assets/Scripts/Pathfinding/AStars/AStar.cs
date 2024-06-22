@@ -95,7 +95,7 @@ namespace Braddss.Pathfinding.Astars
                     continue;
                 }
 
-                neighbor.SetParent(startTile, neighborDirs);
+                neighbor.SetParent(startTile);
                 CalculateCost(neighbor);
             }
 
@@ -165,7 +165,7 @@ namespace Braddss.Pathfinding.Astars
                     continue;
                 }
 
-                neighbor.SetParent(current, neighborDirs);
+                neighbor.SetParent(current);
                 CalculateCost(neighbor);
                 if (!openSet.Contains(neighbor))
                 {
@@ -198,7 +198,7 @@ namespace Braddss.Pathfinding.Astars
 
         private int CalculateHCost(Tile tile)
         {
-            //return (End - tile.Index).magnitude;
+            //return (int)((End - tile.Index).magnitude * 1000);
 
             var index = (End - tile.Index);
 

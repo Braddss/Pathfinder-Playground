@@ -44,7 +44,7 @@ namespace Braddss.Pathfinding.Maps
                 isoValue = isoValue,
             };
 
-            job.Schedule(passableArr.Length, 16).Complete();
+            var handle = job.Schedule(passableArr.Length, 64);
 
 
             //for (int i = 0; i < Tiles.Length; i++)
@@ -58,9 +58,15 @@ namespace Braddss.Pathfinding.Maps
             for (int i = 0; i < Tiles.Length; i++)
             {
                 Vector2Int index = IndexToVec(i);
-                Tiles[i] = new Tile(index, passableArr[i]);
+                Tiles[i] = new Tile(index, false);
             }
 
+            handle.Complete();
+
+            for (int i = 0; i < Tiles.Length; i++)
+            {
+                Tiles[i].Passable = passableArr[i];
+            }
             passableArr.Dispose();
         }
 

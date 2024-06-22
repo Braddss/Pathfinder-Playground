@@ -34,18 +34,11 @@ namespace Braddss.Pathfinding
             return new Tile();
         }
 
-        public void SetParent(Tile parent, Vector2Int[] directions)
+        public void SetParent(Tile parent)
         {
             this.Parent = parent;
 
-            for (int i = 0; i < directions.Length; i++)
-            {
-                if (parent.Index == this.Index + directions[i])
-                {
-                    ParentDir = directions[i];
-                    break;
-                }
-            }
+            this.ParentDir = Parent.Index - this.Index;
         }
 
         public void SetCosts(int gCost, int hCost, int fCost)

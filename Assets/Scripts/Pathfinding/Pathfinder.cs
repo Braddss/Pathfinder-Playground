@@ -1,4 +1,5 @@
-﻿using Braddss.Pathfinding.Astars;
+﻿using Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras;
+using Braddss.Pathfinding.Astars;
 using Braddss.Pathfinding.Maps;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ namespace Braddss.Pathfinding
         {
             AStar,
             AStarSimple,
+            Dijkstra,
         }
 
         private readonly IPathfinder pathfinder;
@@ -34,6 +36,9 @@ namespace Braddss.Pathfinding
                     break;
                 case PathfindingAlogrithm.AStarSimple:
                     pathfinder = new AStarSimple(map);
+                    break;
+                case PathfindingAlogrithm.Dijkstra:
+                    pathfinder = new Dijkstra(map);
                     break;
             }
         }
