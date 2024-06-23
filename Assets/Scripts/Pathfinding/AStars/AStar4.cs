@@ -33,9 +33,12 @@ namespace Braddss.Pathfinding.Astars
 
         public IReadOnlyList<Tile> Closed { get => closed; }
 
-        public AStar4(Map map)
+        private float heuristicMultiplier;
+
+        public AStar4(Map map, float heuristicMultiplier)
         {
             this.map = map;
+            this.heuristicMultiplier = heuristicMultiplier;
         }
 
         public Vector2Int[] CalculatePath(Vector2Int start, Vector2Int end)
@@ -178,7 +181,7 @@ namespace Braddss.Pathfinding.Astars
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = (Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y)) * 1000;
+            var hCost = (int)((Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y)) * 1000 * heuristicMultiplier);
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);

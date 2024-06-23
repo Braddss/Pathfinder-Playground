@@ -28,15 +28,15 @@ namespace Braddss.Pathfinding
 
         public Vector2Int End => pathfinder.End;
 
-        public Pathfinder(Map map, PathfindingAlogrithm algo = PathfindingAlogrithm.AStar) 
+        public Pathfinder(Map map, PathfindingAlogrithm algo = PathfindingAlogrithm.AStar, float heuristicMultiplier = 1)
         {
             switch (algo) 
             {
                 case PathfindingAlogrithm.AStar:
-                    pathfinder = new AStar(map);
+                    pathfinder = new AStar(map, heuristicMultiplier);
                     break;
                 case PathfindingAlogrithm.AStar4:
-                    pathfinder = new AStar4(map);
+                    pathfinder = new AStar4(map, heuristicMultiplier);
                     break;
                 case PathfindingAlogrithm.Dijkstra:
                     pathfinder = new Dijkstra(map);

@@ -57,6 +57,8 @@ namespace Bradds.Playground
         [SerializeField]
         private float speed = 0.2f;
 
+        [SerializeField]
+        private float heuristicMultiplier = 1;
         private int PathIndex
         {
             get => pathIndex;
@@ -299,7 +301,7 @@ namespace Bradds.Playground
                 }
             }
 
-            var pathFinder = new Pathfinder(map, algorithm);
+            var pathFinder = new Pathfinder(map, algorithm, heuristicMultiplier);
 
             Vector2Int end = new Vector2Int(0, 0);
 
@@ -358,7 +360,7 @@ namespace Bradds.Playground
                 }
             }
 
-            pathfinder = new Pathfinder(map, algorithm);
+            pathfinder = new Pathfinder(map, algorithm, heuristicMultiplier);
 
             Vector2Int end = new Vector2Int(0, 0);
 
@@ -409,6 +411,7 @@ namespace Bradds.Playground
 
             pathNeedsUpdate = true;
             startPos = null;
+
         }
 
         private void SetMapProperties()
