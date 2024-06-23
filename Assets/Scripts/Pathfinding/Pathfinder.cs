@@ -13,8 +13,9 @@ namespace Braddss.Pathfinding
         public enum PathfindingAlogrithm
         {
             AStar,
-            AStarSimple,
+            AStar4,
             Dijkstra,
+            Dijkstra4,
         }
 
         private readonly IPathfinder pathfinder;
@@ -34,11 +35,14 @@ namespace Braddss.Pathfinding
                 case PathfindingAlogrithm.AStar:
                     pathfinder = new AStar(map);
                     break;
-                case PathfindingAlogrithm.AStarSimple:
-                    pathfinder = new AStarSimple(map);
+                case PathfindingAlogrithm.AStar4:
+                    pathfinder = new AStar4(map);
                     break;
                 case PathfindingAlogrithm.Dijkstra:
                     pathfinder = new Dijkstra(map);
+                    break;
+                case PathfindingAlogrithm.Dijkstra4:
+                    pathfinder = new Dijkstra4(map);
                     break;
             }
         }
