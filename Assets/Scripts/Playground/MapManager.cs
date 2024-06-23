@@ -11,16 +11,16 @@ namespace Bradds.Playground
     {
         public static MapManager I { get; private set; }
 
-        public enum PassableState
+        public enum TileState
         {
             XPassable = 1,
-            Passable = 2,
-            Player = 3,
-            End = 4,
-            Path = 5,
-            Open = 6,
-            Closed = 7,
-            Border = 8,
+            Passable = 101,
+            Player = 103,
+            End = 104,
+            Path = 105,
+            Open = 106,
+            Closed = 107,
+            Border = 108,
             Hover = 4096,
         }
 
@@ -267,9 +267,9 @@ namespace Bradds.Playground
             ++DebugIndex;
         }
 
-        public void SetTile(Vector2Int index, PassableState state)
+        public void SetTile(Vector2Int index, TileState state)
         {
-            map.GetTile(index).Passable = state == PassableState.Passable;
+            map.GetTile(index).PassablePercent = state == TileState.Passable ? (byte)100 : (byte)0;
             SetMapProperties();
 
             pathNeedsUpdate = true;
@@ -284,7 +284,7 @@ namespace Bradds.Playground
                 while (true)
                 {
                     Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
-                    if (map.GetTile(vec).Passable)
+                    if (map.GetTile(vec).PassablePercent > 0)
                     {
                         start = vec;
                         break;
@@ -300,7 +300,7 @@ namespace Bradds.Playground
             {
 
                 Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
-                if (vec != start && map.GetTile(vec).Passable)
+                if (vec != start && map.GetTile(vec).PassablePercent > 0)
                 {
                     end = vec;
                     break;
@@ -329,7 +329,7 @@ namespace Bradds.Playground
                 while (true)
                 {
                     Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
-                    if (map.GetTile(vec).Passable)
+                    if (map.GetTile(vec).PassablePercent > 0)
                     {
                         start = vec;
                         break;
@@ -345,7 +345,7 @@ namespace Bradds.Playground
             {
 
                 Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
-                if (vec != start && map.GetTile(vec).Passable)
+                if (vec != start && map.GetTile(vec).PassablePercent > 0)
                 {
                     end = vec;
                     break;
@@ -385,7 +385,7 @@ namespace Bradds.Playground
 
         private void SetMapProperties()
         {
-            PassableState[] bufferData = map.Tiles.Select(tile => tile.Passable ? PassableState.Passable : PassableState.XPassable).ToArray();
+            TileState[] bufferData = map.Tiles.Select(tile => (TileState)Mathf.Clamp(tile.PassablePercent + 1, 1, 101)).ToArray();
 
             if (showDebug)
             {
@@ -410,7 +410,7 @@ namespace Bradds.Playground
             mapMaterial.SetInteger("_SizeY", MapSize.y);
         }
 
-        private void ApplyPath(PassableState[] states)
+        private void ApplyPath(TileState[] states)
         {
             if (path == null)
             {
@@ -420,16 +420,16 @@ namespace Bradds.Playground
             int start = map.ToIndex(path[PathIndex]);
             int end = map.ToIndex(path[^1]);
 
-            states[start] = PassableState.Player;
-            states[end] = PassableState.End;
+            states[start] = TileState.Player;
+            states[end] = TileState.End;
 
             for (int i = PathIndex + 1; i < path.Length - 1; i++)
             {
-                states[map.ToIndex(path[i])] = PassableState.Path;
+                states[map.ToIndex(path[i])] = TileState.Path;
             }
         }
 
-        private void ApplyDebug(PassableState[] states)
+        private void ApplyDebug(TileState[] states)
         {
             if (pathfinder == null || path != null)
             {
@@ -442,12 +442,12 @@ namespace Bradds.Playground
 
             for (int i = 0; i < open.Length; i++)
             {
-                states[open[i]] = PassableState.Open;
+                states[open[i]] = TileState.Open;
             }
 
             for (int i = 0; i < closed.Length; i++)
             {
-                states[closed[i]] = PassableState.Closed;
+                states[closed[i]] = TileState.Closed;
             }
 
             int start = map.ToIndex(pathfinder.Start);
@@ -455,12 +455,12 @@ namespace Bradds.Playground
 
             Vector2Int[] tempPath = pathfinder.GetTempPath();
 
-            states[start] = PassableState.Player;
-            states[end] = PassableState.End;
+            states[start] = TileState.Player;
+            states[end] = TileState.End;
 
             for (int i = 1; i < tempPath.Length - 1; i++)
             {
-                states[map.ToIndex(tempPath[i])] = PassableState.Path;
+                states[map.ToIndex(tempPath[i])] = TileState.Path;
             }
         }
 

@@ -16,5 +16,7 @@ namespace Braddss.Pathfinding
         public float octAmplitude;
 
         public int numOctaves;
+
+        public bool blackWhite;
     }
 }

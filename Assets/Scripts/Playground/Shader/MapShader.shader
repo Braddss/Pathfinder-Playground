@@ -30,16 +30,16 @@ Shader "Unlit/MapShader"
 
             StructuredBuffer<int> _MapBuffer;
 
-            static const uint S_Nothing      = 0x00000000u;
-            static const uint S_XPassable    = 0x00000001u;
-            static const uint S_Passable     = 0x00000002u;
-            static const uint S_Player       = 0x00000003u;
-            static const uint S_End          = 0x00000004u;
-            static const uint S_Path         = 0x00000005u;
-            static const uint S_Open         = 0x00000006u;
-            static const uint S_Closed       = 0x00000007u;
-            static const uint S_Border       = 0x00000008u;
-            static const uint S_Hover        = 0x00001000u;
+            static const uint S_Nothing      = 0u;
+            static const uint S_XPassable    = 1u;
+            static const uint S_Passable     = 101u;
+            static const uint S_Player       = 103u;
+            static const uint S_End          = 104u;
+            static const uint S_Path         = 105u;
+            static const uint S_Open         = 106u;
+            static const uint S_Closed       = 107u;
+            static const uint S_Border       = 108u;
+            static const uint S_Hover        = 4096u;
 
             int _SizeX;
             int _SizeY;
@@ -105,7 +105,7 @@ Shader "Unlit/MapShader"
 
                 return bufferResult + state;
 
-                return S_Passable + state;
+                // return S_Passable + state;
             }
 
             v2f vert (appdata v)
@@ -133,13 +133,11 @@ Shader "Unlit/MapShader"
                 {
                     col = _BorderCol;
                 }
-                else if (state == S_Passable)
+                else if (state <= S_Passable && state >= S_XPassable)
                 {
-                    col = _PassableCol;
-                }
-                else if (state == S_XPassable)
-                {
-                    col = _XPassableCol;
+                    float t = ((float)(state - 1)) / 100;
+
+                    col = (1 - t) * _XPassableCol + t * _PassableCol;
                 }
                 else if (state == S_Path)
                 {

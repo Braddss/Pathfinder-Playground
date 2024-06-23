@@ -87,7 +87,7 @@ namespace Braddss.Pathfinding.Astars
             {
                 var neighbor = map.GetTile(start + neighborDirs[i]);
 
-                if (!neighbor.Passable)
+                if (neighbor.PassablePercent == 0)
                 {
                     continue;
                 }
@@ -153,7 +153,7 @@ namespace Braddss.Pathfinding.Astars
             {
                 var neighbor = map.GetTile(current.Index + neighborDirs[i]);
 
-                if (!neighbor.Passable || closedSet.Contains(neighbor))
+                if (neighbor.PassablePercent == 0 || closedSet.Contains(neighbor))
                 {
                     continue;
                 }

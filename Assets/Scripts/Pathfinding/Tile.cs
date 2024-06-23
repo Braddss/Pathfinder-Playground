@@ -8,7 +8,7 @@ namespace Braddss.Pathfinding
 
         public Vector2Int ParentDir { get; private set; } = Vector2Int.zero;
 
-        public bool Passable { get; set; }
+        public byte PassablePercent { get; set; }
 
         public Vector2Int Index { get; private set; }
 
@@ -18,15 +18,15 @@ namespace Braddss.Pathfinding
 
         public int FCost { get; private set; }
 
-        public Tile(Vector2Int index, bool passable)
+        public Tile(Vector2Int index, byte passablePercent)
         {
             this.Index = index;
-            this.Passable = passable;
+            this.PassablePercent = passablePercent;
         }
 
         private Tile()
         {
-            this.Passable = false;
+            this.PassablePercent = 0;
         }
 
         public static Tile OOB()

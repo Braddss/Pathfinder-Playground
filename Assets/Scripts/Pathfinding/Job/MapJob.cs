@@ -10,7 +10,7 @@ namespace Braddss.Pathfinding.Jobs
     public struct MapJob : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<bool> tiles;
+        public NativeArray<byte> tiles;
 
         public Vector2Int size;
 
@@ -25,7 +25,27 @@ namespace Braddss.Pathfinding.Jobs
         {
             Vector2Int index2 = IndexToVec(index);
 
-            tiles[index] = OctaveNoise(index2, config) < isoValue;
+            if (config.blackWhite)
+            {
+                tiles[index] = OctaveNoise(index2, config) < isoValue ? (byte)100 : (byte)0;
+            }
+            else
+            {
+                var noiseVal = OctaveNoise(index2, config);
+
+                if (noiseVal < isoValue)
+                {
+                    tiles[index] = 100;
+                }
+                else if (noiseVal - 0.1 < isoValue)
+                {
+                    tiles[index] = 50;
+                }
+                else
+                {
+                    tiles[index] = 0;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

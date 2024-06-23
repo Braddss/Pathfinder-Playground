@@ -25,13 +25,13 @@ namespace Braddss.Pathfinding.Maps
                 for (int i = 0; i < Tiles.Length; i++)
                 {
                     Vector2Int index = IndexToVec(i);
-                    Tiles[i] = new Tile(index, true);
+                    Tiles[i] = new Tile(index, 100);
                 }
 
                 return;
             }
 
-            var passableArr = new NativeArray<bool>(size.x * size.y, Allocator.TempJob);
+            var passableArr = new NativeArray<byte>(size.x * size.y, Allocator.TempJob);
 
             perlin = new Perlin(config.seed);
 
@@ -58,15 +58,16 @@ namespace Braddss.Pathfinding.Maps
             for (int i = 0; i < Tiles.Length; i++)
             {
                 Vector2Int index = IndexToVec(i);
-                Tiles[i] = new Tile(index, false);
+                Tiles[i] = new Tile(index, 100);
             }
 
             handle.Complete();
 
             for (int i = 0; i < Tiles.Length; i++)
             {
-                Tiles[i].Passable = passableArr[i];
+                Tiles[i].PassablePercent = passableArr[i];
             }
+
             passableArr.Dispose();
         }
 

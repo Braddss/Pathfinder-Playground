@@ -62,11 +62,11 @@ namespace Bradds.Playground
 
             if (Input.GetMouseButton(0))
             {
-                MapManager.I.SetTile(id.ToVec2Int(), MapManager.PassableState.XPassable);
+                MapManager.I.SetTile(id.ToVec2Int(), MapManager.TileState.XPassable);
             }
             else if (Input.GetMouseButton(2)) 
             {
-                MapManager.I.SetTile(id.ToVec2Int(), MapManager.PassableState.Passable);
+                MapManager.I.SetTile(id.ToVec2Int(), MapManager.TileState.Passable);
             }
         }
 
