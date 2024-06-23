@@ -229,20 +229,24 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         private int DistanceToNeighbor(Tile tile, Tile neighbor)
         {
+            var costMultiplier = (tile.PassablePercent + neighbor.PassablePercent) / 2f;
+
+            costMultiplier /= 100;
+
             var index = tile.Index - neighbor.Index;
 
             var temp = (index.x != 0 ? 1 : 0) + (index.y != 0 ? 1 : 0);
 
             if (temp == 1)
             {
-                return 1000;
+                return (int)(1000 / costMultiplier);
             }
             else if (temp == 2)
             {
-                return 1414;
+                return (int)(1414 / costMultiplier);
             }
 
-            return 1000;
+            return (int)(1000 / costMultiplier);
         }
 
         private void Clear()

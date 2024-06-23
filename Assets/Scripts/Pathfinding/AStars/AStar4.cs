@@ -178,7 +178,7 @@ namespace Braddss.Pathfinding.Astars
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y);
+            var hCost = (Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y)) * 1000;
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);
@@ -191,7 +191,11 @@ namespace Braddss.Pathfinding.Astars
                 return 0;
             }
 
-            return tile.Parent.GCost + 1;
+            var costMultiplier = (tile.PassablePercent + tile.Parent.PassablePercent) / 2f;
+
+            costMultiplier /= 100;
+
+            return tile.Parent.GCost + (int)(1000 / costMultiplier);
         }
 
         private Vector2Int[] CalculatePath(Tile tile)

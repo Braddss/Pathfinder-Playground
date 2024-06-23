@@ -15,7 +15,7 @@ namespace Braddss.Pathfinding
             float offsetRange = 1000;
 
             float result = 0f;
-            float frequency = config.frequency;
+            float frequency = config.frequency / 1000;
             float amplitude = config.amplitude;
 
             for (int i = 0; i < config.numOctaves; i++)

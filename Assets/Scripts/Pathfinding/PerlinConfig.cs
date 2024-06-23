@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Braddss.Pathfinding
 {
@@ -15,8 +16,12 @@ namespace Braddss.Pathfinding
 
         public float octAmplitude;
 
+        [Range(0, 20)]
         public int numOctaves;
 
-        public bool blackWhite;
+        [Range(0, 100)]
+        public int steps;
+
+        public float transitionSize;
     }
 }

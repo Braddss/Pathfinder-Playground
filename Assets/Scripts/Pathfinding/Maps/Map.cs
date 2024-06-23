@@ -44,8 +44,8 @@ namespace Braddss.Pathfinding.Maps
                 isoValue = isoValue,
             };
 
-            var handle = job.Schedule(passableArr.Length, 64);
-
+            var handle = job.Schedule(passableArr.Length, 256);
+            //job.Run(passableArr.Length);
 
             //for (int i = 0; i < Tiles.Length; i++)
             //{

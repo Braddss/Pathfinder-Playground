@@ -239,8 +239,6 @@ namespace Bradds.Playground
 
             for (int i = 0; i < count; i++)
             {
-                
-
                 Vector2Int[] p = pathfinder.CalculatePathStepwise();
 
                 if (p == null)
@@ -279,9 +277,12 @@ namespace Bradds.Playground
         private void CalculatePath(Vector2Int? start = null)
         {
             pathNeedsUpdate = false;
+
+            var counter = 0;
+
             if (start == null)
             {
-                while (true)
+                while (counter++ < 10)
                 {
                     Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                     if (map.GetTile(vec).PassablePercent > 0)
@@ -290,13 +291,19 @@ namespace Bradds.Playground
                         break;
                     }
                 }
+
+                if (counter >= 10)
+                {
+                    pathNeedsUpdate = true;
+                    return;
+                }
             }
 
             var pathFinder = new Pathfinder(map, algorithm);
 
-            Vector2Int end;
+            Vector2Int end = new Vector2Int(0, 0);
 
-            while (true)
+            while (counter++ < 10)
             {
 
                 Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
@@ -305,6 +312,12 @@ namespace Bradds.Playground
                     end = vec;
                     break;
                 }
+            }
+
+            if (counter >= 10)
+            {
+                pathNeedsUpdate = true;
+                return;
             }
 
             var p = pathFinder.CalculatePath(start.Value, end);
@@ -323,10 +336,12 @@ namespace Bradds.Playground
 
         private void CalculatePathStepwise(Vector2Int? start = null)
         {
+            var counter = 0;
+
             pathNeedsUpdate = false;
             if (start == null)
             {
-                while (true)
+                while (counter++ < 10)
                 {
                     Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
                     if (map.GetTile(vec).PassablePercent > 0)
@@ -335,13 +350,19 @@ namespace Bradds.Playground
                         break;
                     }
                 }
+
+                if (counter >= 10)
+                {
+                    pathNeedsUpdate = true;
+                    return;
+                }
             }
 
             pathfinder = new Pathfinder(map, algorithm);
 
-            Vector2Int end;
+            Vector2Int end = new Vector2Int(0, 0);
 
-            while (true)
+            while (counter++ < 10)
             {
 
                 Vector2Int vec = new Vector2Int(Random.Range(0, MapSize.x), Random.Range(0, MapSize.y));
@@ -350,6 +371,12 @@ namespace Bradds.Playground
                     end = vec;
                     break;
                 }
+            }
+
+            if (counter >= 10)
+            {
+                pathNeedsUpdate = true;
+                return;
             }
 
             path = null;
@@ -372,6 +399,7 @@ namespace Bradds.Playground
             if (mapConfigHash != currentMapConfigHashCode)
             {
                 map = new Map(MapSize, perlinConfig, isoValue);
+                pathNeedsUpdate = true;
             }
 
             currentMapConfigHashCode = mapConfigHash;

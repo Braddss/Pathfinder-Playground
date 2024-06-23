@@ -213,20 +213,26 @@ namespace Braddss.Pathfinding.Astars
         private int DistanceToNeighbor(Tile tile, Tile neighbor)
         {
             //return (tile.Index - neighbor.Index).magnitude;
+            var costMultiplier = (tile.PassablePercent + neighbor.PassablePercent) / 2f;
+
+            costMultiplier /= 100;
+
+            costMultiplier = Mathf.Clamp(costMultiplier, 0.01f, 1);
+
             var index = tile.Index - neighbor.Index;
 
             var temp = (index.x != 0 ? 1 : 0) + (index.y != 0 ? 1 : 0);
 
             if (temp == 1)
             {
-                return 1000;
+                return (int)(1000 / costMultiplier);
             }
             else if (temp == 2)
             {
-                return 1414;// 421356237f;
+                return (int)(1414 / costMultiplier);// 421356237f;
             }
 
-            return 1000;
+            return (int)(1000 / costMultiplier);
         }
 
         private Vector2Int[] CalculatePath(Tile tile)

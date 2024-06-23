@@ -213,11 +213,15 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         private void CalculateCost(Tile tile)
         {
+            var costMultiplier = (tile.PassablePercent + tile.Parent.PassablePercent) / 2f;
+
+            costMultiplier /= 100;
+
             var gCost = 0;
 
             if (tile.Parent != null)
             {
-                gCost = tile.Parent.GCost + 1000;
+                gCost = tile.Parent.GCost + (int)(1000 / costMultiplier);
             }
 
             tile.SetCosts(gCost, 0, 0);

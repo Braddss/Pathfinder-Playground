@@ -25,27 +25,18 @@ namespace Braddss.Pathfinding.Jobs
         {
             Vector2Int index2 = IndexToVec(index);
 
-            if (config.blackWhite)
-            {
-                tiles[index] = OctaveNoise(index2, config) < isoValue ? (byte)100 : (byte)0;
-            }
-            else
-            {
-                var noiseVal = OctaveNoise(index2, config);
+            var noiseVal = OctaveNoise(index2, config);
 
-                if (noiseVal < isoValue)
-                {
-                    tiles[index] = 100;
-                }
-                else if (noiseVal - 0.1 < isoValue)
-                {
-                    tiles[index] = 50;
-                }
-                else
-                {
-                    tiles[index] = 0;
-                }
-            }
+            var max = isoValue;
+            var min = isoValue - (config.transitionSize / 10);
+
+            var t = (noiseVal - min) / (max - min);
+
+            t = Mathf.Clamp(t, 0, 1);
+
+            var value = (byte)(((float)Mathf.Clamp((int)((1 - t) * (config.steps + 2)), 0, (config.steps + 1)) / (config.steps + 1)) * 100);
+
+            tiles[index] = value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -60,7 +51,7 @@ namespace Braddss.Pathfinding.Jobs
             float offsetRange = 1000;
 
             float result = 0f;
-            float frequency = config.frequency;
+            float frequency = config.frequency / 1000;
             float amplitude = config.amplitude;
 
             for (int i = 0; i < config.numOctaves; i++)
