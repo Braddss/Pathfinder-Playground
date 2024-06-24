@@ -10,7 +10,7 @@ namespace Braddss.Pathfinding.Jobs
     public struct MapJob : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<byte> tiles;
+        public NativeArray<Tile> tiles;
 
         public Vector2Int size;
 
@@ -36,7 +36,7 @@ namespace Braddss.Pathfinding.Jobs
 
             var value = (byte)(((float)Mathf.Clamp((int)((1 - t) * (config.steps + 2)), 0, (config.steps + 1)) / (config.steps + 1)) * 100);
 
-            tiles[index] = value;
+            tiles[index] = new Tile(index, index2, value);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

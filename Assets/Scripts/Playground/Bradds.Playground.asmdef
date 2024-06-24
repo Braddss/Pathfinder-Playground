@@ -3,7 +3,8 @@
     "rootNamespace": "Bradds.Playground",
     "references": [
         "GUID:1260440b202db404da8c607152e0a971",
-        "GUID:d8b63aba1907145bea998dd612889d6b"
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:e0cd26848372d4e5c891c569017e11f1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

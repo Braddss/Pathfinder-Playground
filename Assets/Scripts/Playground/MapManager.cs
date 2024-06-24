@@ -2,6 +2,7 @@ using Braddss.Pathfinding;
 using Braddss.Pathfinding.Maps;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Profiling;
 using static Braddss.Pathfinding.Pathfinder;
 using Random = UnityEngine.Random;
 
@@ -269,7 +270,23 @@ namespace Bradds.Playground
 
         public void SetTile(Vector2Int index, TileState state)
         {
-            map.GetTile(index).PassablePercent = state == TileState.Passable ? (byte)100 : (byte)0;
+            var passablePercent = state == TileState.Passable ? (byte)100 : (byte)0;
+            var tempTile = map.GetTile(index);
+
+            tempTile.PassablePercent = passablePercent;
+
+            //map.tiles[tempTile.Index] = new Tile
+            //{
+            //    Index = tempTile.Index,
+            //    Index2 = index,
+            //    FCost = tempTile.FCost,
+            //    GCost = tempTile.GCost,
+            //    HCost = tempTile.HCost,
+            //    PassablePercent = passablePercent,
+            //    ParentDir = tempTile.ParentDir,
+            //    Parent = tempTile.Parent,
+            //};
+
             SetMapProperties();
 
             pathNeedsUpdate = true;
@@ -391,17 +408,21 @@ namespace Bradds.Playground
 
         private void UpdateMapProperties()
         {
+            Profiler.BeginSample("Update Map Properties");
             var mapConfigHash = GetMapConfigHashCode();
             var mapDataHash = GetMapDataHashCode();
             if (currentMapConfigHashCode == mapConfigHash && currentMapDataHashCode == mapDataHash)
             {
+                Profiler.EndSample();
                 return;
             }
 
             if (mapConfigHash != currentMapConfigHashCode)
             {
+                Profiler.BeginSample("Generate Map");
                 map = new Map(MapSize, perlinConfig, isoValue);
                 pathNeedsUpdate = true;
+                Profiler.EndSample();
             }
 
             currentMapConfigHashCode = mapConfigHash;
@@ -412,11 +433,17 @@ namespace Bradds.Playground
             pathNeedsUpdate = true;
             startPos = null;
 
+            Profiler.EndSample();
         }
 
         private void SetMapProperties()
         {
-            TileState[] bufferData = map.Tiles.Select(tile => (TileState)Mathf.Clamp(tile.PassablePercent + 1, 1, 101)).ToArray();
+            var bufferData = new TileState[map.tiles.Length];
+
+            for (int i = 0; i < bufferData.Length; i++)
+            {
+                bufferData[i] = (TileState)Mathf.Clamp(map.tiles.ElementAt(i).PassablePercent + 1, 1, 101);
+            }
 
             if (showDebug)
             {
@@ -467,9 +494,9 @@ namespace Bradds.Playground
                 return;
             }
 
-            int[] open = pathfinder.Open.Select(t => map.ToIndex(t.Index)).ToArray();
+            int[] open = pathfinder.Open.Select(t => map.ToIndex(t.Index2)).ToArray();
 
-            int[] closed = pathfinder.Closed.Select(t => map.ToIndex(t.Index)).ToArray();
+            int[] closed = pathfinder.Closed.Select(t => map.ToIndex(t.Index2)).ToArray();
 
             for (int i = 0; i < open.Length; i++)
             {

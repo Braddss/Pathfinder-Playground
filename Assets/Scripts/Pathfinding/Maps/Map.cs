@@ -7,9 +7,11 @@ using UnityEngine;
 
 namespace Braddss.Pathfinding.Maps
 {
-    public class Map
+    public struct Map
     {
-        public Tile[] Tiles { get; private set; }
+        public NativeList<Tile> defaultTile;
+
+        public NativeList<Tile> tiles;
 
         private readonly Perlin perlin;
 
@@ -18,22 +20,28 @@ namespace Braddss.Pathfinding.Maps
         public Map(Vector2Int size, PerlinConfig config, float isoValue)
         {
             this.size = size;
-            Tiles = new Tile[size.x * size.y];
+            
+            defaultTile = new NativeList<Tile>(1, Allocator.Persistent)
+            {
+                Tile.Default()
+            };
+
+            perlin = new Perlin(config.seed);
 
             if (config.frequency == 0)
             {
-                for (int i = 0; i < Tiles.Length; i++)
+                tiles = new NativeList<Tile>(size.x * size.y, Allocator.Persistent);
+
+                for (int i = 0; i < tiles.Length; i++)
                 {
                     Vector2Int index = IndexToVec(i);
-                    Tiles[i] = new Tile(index, 100);
+                    tiles.Add(new Tile(i, index, 100));
                 }
 
                 return;
             }
 
-            var passableArr = new NativeArray<byte>(size.x * size.y, Allocator.TempJob);
-
-            perlin = new Perlin(config.seed);
+            var passableArr = new NativeArray<Tile>(size.x * size.y, Allocator.TempJob);
 
             var job = new MapJob
             {
@@ -44,7 +52,7 @@ namespace Braddss.Pathfinding.Maps
                 isoValue = isoValue,
             };
 
-            var handle = job.Schedule(passableArr.Length, 256);
+            job.Schedule(passableArr.Length, 256).Complete();
             //job.Run(passableArr.Length);
 
             //for (int i = 0; i < Tiles.Length; i++)
@@ -55,26 +63,30 @@ namespace Braddss.Pathfinding.Maps
             //    Tiles[i] = new Tile(index, passable);
             //}
 
-            for (int i = 0; i < Tiles.Length; i++)
-            {
-                Vector2Int index = IndexToVec(i);
-                Tiles[i] = new Tile(index, 100);
-            }
 
-            handle.Complete();
+            tiles = new NativeList<Tile>(passableArr.Length, Allocator.Persistent);
 
-            for (int i = 0; i < Tiles.Length; i++)
-            {
-                Tiles[i].PassablePercent = passableArr[i];
-            }
+            tiles.AddRange(passableArr);
+
+            //for (int i = 0; i < passableArr.Length; i++)
+            //{
+            //    Vector2Int index = IndexToVec(i);
+            //    tiles.Add(new Tile(i, index, passableArr[i]));
+            //}
 
             passableArr.Dispose();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Tile GetTile(Vector2Int index)
+        public ref Tile GetTile(Vector2Int index)
         {
-            return IndexInBounds(index) ? Tiles[ToIndex(index)] : Tile.OOB();
+            return ref IndexInBounds(index) ? ref tiles.ElementAt(ToIndex(index)) : ref defaultTile.ElementAt(0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ref Tile GetTile(int index)
+        {
+            return ref tiles.ElementAt(index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

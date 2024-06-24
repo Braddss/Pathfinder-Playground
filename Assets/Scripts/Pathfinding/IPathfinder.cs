@@ -13,9 +13,9 @@ namespace Braddss.Pathfinding
 
         public Vector2Int[] GetTempPath();
 
-        public IReadOnlyList<Tile> Open { get; }
+        public IEnumerable<Tile> Open { get; }
 
-        public IReadOnlyList<Tile> Closed { get; }
+        public IEnumerable<Tile> Closed { get; }
 
         public Vector2Int Start { get; }
 

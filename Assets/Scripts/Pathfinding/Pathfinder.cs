@@ -20,9 +20,9 @@ namespace Braddss.Pathfinding
 
         private readonly IPathfinder pathfinder;
 
-        public IReadOnlyList<Tile> Open => pathfinder.Open;
+        public IEnumerable<Tile> Open => pathfinder.Open;
 
-        public IReadOnlyList<Tile> Closed => pathfinder.Closed;
+        public IEnumerable<Tile> Closed => pathfinder.Closed;
 
         public Vector2Int Start => pathfinder.Start;
 

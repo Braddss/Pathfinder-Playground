@@ -1,5 +1,8 @@
 using Braddss.Pathfinding.Maps;
+using NUnit.Framework;
 using System.Collections.Generic;
+using System.Linq;
+using Unity.Collections;
 using UnityEngine;
 
 namespace Braddss.Pathfinding.Astars
@@ -18,23 +21,41 @@ namespace Braddss.Pathfinding.Astars
             Vector2Int.right + Vector2Int.down,
         };
 
-        private readonly List<Tile> open = new List<Tile>();
-        private readonly List<Tile> closed = new List<Tile>();
-        private readonly HashSet<Tile> openSet = new HashSet<Tile>();
-        private readonly HashSet<Tile> closedSet = new HashSet<Tile>();
+        private readonly NativeList<int> open = new NativeList<int>(1000, Allocator.Persistent);
+        private readonly NativeList<int> closed = new NativeList<int>(1000, Allocator.Persistent);
+        private readonly NativeHashSet<int> openSet = new NativeHashSet<int>(1000, Allocator.Persistent);
+        private readonly NativeHashSet<int> closedSet = new NativeHashSet<int>(1000, Allocator.Persistent);
 
         private List<Vector2Int> pathDirections = new List<Vector2Int>();
 
-        private Tile current = null;
+        private Tile current = Tile.Default();
 
         public Vector2Int Start { get; private set; }
         public Vector2Int End { get; private set; }
 
         private readonly Map map;
 
-        public IReadOnlyList<Tile> Open { get => open; }
+        public IEnumerable<Tile> Open 
+        { 
+            get
+            {
+                for (int i = 0; i < open.Length; i++)
+                {
+                    yield return map.GetTile(open[i]);
+                }
+            } 
+        }
 
-        public IReadOnlyList<Tile> Closed { get => closed; }
+        public IEnumerable<Tile> Closed
+        {
+            get
+            {
+                for (int i = 0; i < closed.Length; i++)
+                {
+                    yield return map.GetTile(closed[i]);
+                }
+            }
+        }
 
         private float heuristicMultiplier;
 
@@ -71,7 +92,7 @@ namespace Braddss.Pathfinding.Astars
 
         public Vector2Int[] GetTempPath()
         {
-            if (current == null)
+            if (current.IsDefault())
             {
                 return new Vector2Int[0];
             }
@@ -85,13 +106,13 @@ namespace Braddss.Pathfinding.Astars
             this.Start = start;
             this.End = end;
 
-            var startTile = map.GetTile(start);
-            open.Add(startTile);
-            openSet.Add(startTile);
+            ref var startTile = ref map.GetTile(start);
+            open.Add(startTile.Index);
+            openSet.Add(startTile.Index);
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
-                var neighbor = map.GetTile(start + neighborDirs[i]);
+                ref var neighbor = ref map.GetTile(start + neighborDirs[i]);
 
                 if (neighbor.PassablePercent == 0)
                 {
@@ -99,24 +120,24 @@ namespace Braddss.Pathfinding.Astars
                 }
 
                 neighbor.SetParent(startTile);
-                CalculateCost(neighbor);
+                CalculateCost(ref neighbor);
             }
 
-            CalculateCost(startTile);
+            CalculateCost(ref startTile);
         }
 
         private Vector2Int[] Step()
         {
-            if (open.Count == 0)
+            if (open.Length == 0)
             {
                 return new Vector2Int[0];
             }
 
-            current = open[^1];
+            current = map.GetTile(open[open.Length -1]);
 
-            for (int i = open.Count - 2; i >= 0; i--)
+            for (int i = open.Length - 2; i >= 0; i--)
             {
-                var tile = open[i];
+                ref var tile = ref map.GetTile(open[i]);
                 if (tile.FCost < current.FCost)
                 {
                     current = tile;
@@ -127,23 +148,36 @@ namespace Braddss.Pathfinding.Astars
                 }
             }
 
-            open.Remove(current);
-            openSet.Remove(current);
-            closed.Add(current);
-            closedSet.Add(current);
+            var index = -1;
 
-            if (current.Index == End)
+            for(int i = 0; i < open.Length; i++)
+            {
+                if (open[i] == current.Index)
+                {
+                    index = i;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(index >= 0);
+
+            open.RemoveAt(index);
+            openSet.Remove(current.Index);
+            closed.Add(current.Index);
+            closedSet.Add(current.Index);
+
+            if (current.Index2 == End)
             {
                 var path = CalculatePath(map.GetTile(End));
 
-                for (int i = 0; i < open.Count; i++)
+                for (int i = 0; i < open.Length; i++)
                 {
-                    open[i].Clear();
+                    map.GetTile(open[i]).Clear();
                 }
 
-                for (int i = 0; i < closed.Count; i++)
+                for (int i = 0; i < closed.Length; i++)
                 {
-                    closed[i].Clear();
+                    map.GetTile(closed[i]).Clear();
                 }
 
                 open.Clear();
@@ -156,31 +190,31 @@ namespace Braddss.Pathfinding.Astars
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
-                var neighbor = map.GetTile(current.Index + neighborDirs[i]);
+                ref var neighbor = ref map.GetTile(current.Index2 + neighborDirs[i]);
 
-                if (neighbor.PassablePercent == 0 || closedSet.Contains(neighbor))
+                if (neighbor.PassablePercent == 0 || closedSet.Contains(neighbor.Index))
                 {
                     continue;
                 }
 
-                if (openSet.Contains(neighbor) && current.GCost + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
+                if (openSet.Contains(neighbor.Index) && current.GCost + DistanceToNeighbor(current, neighbor) >= neighbor.GCost)
                 {
                     continue;
                 }
 
                 neighbor.SetParent(current);
-                CalculateCost(neighbor);
-                if (!openSet.Contains(neighbor))
+                CalculateCost(ref neighbor);
+                if (!openSet.Contains(neighbor.Index))
                 {
-                    open.Add(neighbor);
-                    openSet.Add(neighbor);
+                    open.Add(neighbor.Index);
+                    openSet.Add(neighbor.Index);
                 }
             }
 
             return null;
         }
         
-        private void CalculateCost(Tile tile)
+        private void CalculateCost(ref Tile tile)
         {
             var gCost = CalculateGCost(tile);
             var hCost = (int)(CalculateHCost(tile) * heuristicMultiplier);
@@ -191,19 +225,21 @@ namespace Braddss.Pathfinding.Astars
 
         private int CalculateGCost(Tile tile)
         {
-            if (tile.Parent == null)
+            if (tile.Parent == -1)
             {
                 return 0;
             }
 
-            return tile.Parent.GCost + DistanceToNeighbor(tile, tile.Parent);
+            var parent = map.GetTile(tile.Parent);
+
+            return parent.GCost + DistanceToNeighbor(tile, parent);
         }
 
         private int CalculateHCost(Tile tile)
         {
             //return (int)((End - tile.Index).magnitude * 1000);
 
-            var index = (End - tile.Index);
+            var index = (End - tile.Index2);
 
             index = new Vector2Int(Mathf.Abs(index.x), Mathf.Abs(index.y));
 
@@ -222,7 +258,7 @@ namespace Braddss.Pathfinding.Astars
 
             costMultiplier = Mathf.Clamp(costMultiplier, 0.01f, 1);
 
-            var index = tile.Index - neighbor.Index;
+            var index = tile.Index2 - neighbor.Index2;
 
             var temp = (index.x != 0 ? 1 : 0) + (index.y != 0 ? 1 : 0);
 
@@ -242,17 +278,16 @@ namespace Braddss.Pathfinding.Astars
         {
             pathDirections.Clear();
             var startTile = map.GetTile(Start);
-
-            while (tile != startTile)
+            while (tile.Index != startTile.Index)
             {
-                if (tile == null)
+                if (tile.IsDefault())
                 {
                     return new Vector2Int[0];
                 }
 
                 pathDirections.Add(tile.ParentDir);
 
-                tile = tile.Parent;
+                tile = map.GetTile(tile.Parent);
             }
 
             var path = new Vector2Int[pathDirections.Count + 1];
@@ -280,7 +315,7 @@ namespace Braddss.Pathfinding.Astars
             closedSet.Clear();
             pathDirections.Clear();
 
-            current = null;
+            current = Tile.Default();
         }
     }
 }

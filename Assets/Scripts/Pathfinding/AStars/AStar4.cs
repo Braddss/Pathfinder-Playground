@@ -22,16 +22,16 @@ namespace Braddss.Pathfinding.Astars
 
         private List<Vector2Int> pathDirections = new List<Vector2Int>();
 
-        private Tile current = null;
+        private Tile current = Tile.Default();
 
         public Vector2Int Start { get; private set; }
         public Vector2Int End { get; private set; }
 
         private readonly Map map;
 
-        public IReadOnlyList<Tile> Open { get => open; }
+        public IEnumerable<Tile> Open { get => open; }
 
-        public IReadOnlyList<Tile> Closed { get => closed; }
+        public IEnumerable<Tile> Closed { get => closed; }
 
         private float heuristicMultiplier;
 
@@ -68,7 +68,7 @@ namespace Braddss.Pathfinding.Astars
 
         public Vector2Int[] GetTempPath()
         {
-            if (current == null)
+            if (current.IsDefault())
             {
                 return new Vector2Int[0];
             }
@@ -129,7 +129,7 @@ namespace Braddss.Pathfinding.Astars
             closed.Add(current);
             closedSet.Add(current);
 
-            if (current.Index == End)
+            if (current.Index2 == End)
             {
                 var path = CalculatePath(map.GetTile(End));
 
@@ -154,7 +154,7 @@ namespace Braddss.Pathfinding.Astars
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
-                var neighbor = map.GetTile(current.Index + neighborDirs[i]);
+                var neighbor = map.GetTile(current.Index2 + neighborDirs[i]);
 
                 if (neighbor.PassablePercent == 0 || closedSet.Contains(neighbor))
                 {
@@ -181,7 +181,7 @@ namespace Braddss.Pathfinding.Astars
         private void CalculateCost(Tile tile)
         {
             var gCost = CalculateGCost(tile);
-            var hCost = (int)((Math.Abs(End.x - tile.Index.x) + Mathf.Abs(End.y - tile.Index.y)) * 1000 * heuristicMultiplier);
+            var hCost = (int)((Math.Abs(End.x - tile.Index2.x) + Mathf.Abs(End.y - tile.Index2.y)) * 1000 * heuristicMultiplier);
             var fCost = gCost + hCost;
 
             tile.SetCosts(gCost, hCost, fCost);
@@ -189,16 +189,18 @@ namespace Braddss.Pathfinding.Astars
 
         private int CalculateGCost(Tile tile)
         {
-            if (tile.Parent == null)
+            if (tile.Parent == -1)
             {
                 return 0;
             }
 
-            var costMultiplier = (tile.PassablePercent + tile.Parent.PassablePercent) / 2f;
+            var parent = map.GetTile(tile.Parent);
+
+            var costMultiplier = (tile.PassablePercent + parent.PassablePercent) / 2f;
 
             costMultiplier /= 100;
 
-            return tile.Parent.GCost + (int)(1000 / costMultiplier);
+            return parent.GCost + (int)(1000 / costMultiplier);
         }
 
         private Vector2Int[] CalculatePath(Tile tile)
@@ -206,16 +208,16 @@ namespace Braddss.Pathfinding.Astars
             pathDirections.Clear();
             var startTile = map.GetTile(Start);
 
-            while (tile != startTile)
+            while (tile.Index != startTile.Index)
             {
-                if (tile == null)
+                if (tile.IsDefault())
                 {
                     return new Vector2Int[0];
                 }
 
                 pathDirections.Add(tile.ParentDir);
 
-                tile = tile.Parent;
+                tile = map.GetTile(tile.Parent);
             }
 
             var path = new Vector2Int[pathDirections.Count + 1];
@@ -243,7 +245,7 @@ namespace Braddss.Pathfinding.Astars
             closedSet.Clear();
             pathDirections.Clear();
 
-            current = null;
+            current = Tile.Default();
         }
     }
 }

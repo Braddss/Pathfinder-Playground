@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Assertions;
 using static Codice.Client.Common.WebApi.WebApiEndpoints;
 
 namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
@@ -26,7 +27,7 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         private List<Vector2Int> pathDirections = new List<Vector2Int>();
 
-        private Tile current = null;
+        private Tile current = Tile.Default();
 
         public Vector2Int Start { get; private set; }
         
@@ -34,9 +35,9 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         private readonly Map map;
         
-        public IReadOnlyList<Tile> Open { get => open; }
+        public IEnumerable<Tile> Open { get => open; }
 
-        public IReadOnlyList<Tile> Closed { get => closed; }
+        public IEnumerable<Tile> Closed { get => closed; }
 
         public Dijkstra4(Map map)
         {
@@ -65,7 +66,7 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         public Vector2Int[] GetTempPath()
         {
-            if (current == null)
+            if (current.IsDefault())
             {
                 return new Vector2Int[0];
             }
@@ -129,7 +130,7 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
             closed.Add(current);
             closedSet.Add(current);
 
-            if (current.Index == End)
+            if (current.Index2 == End)
             {
                 var path = CalculatePath(map.GetTile(End));
 
@@ -153,7 +154,7 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
             for (int i = 0; i < neighborDirs.Length; i++)
             {
-                var neighbor = map.GetTile(current.Index + neighborDirs[i]);
+                var neighbor = map.GetTile(current.Index2 + neighborDirs[i]);
 
                 if (neighbor.PassablePercent == 0 || closedSet.Contains(neighbor))
                 {
@@ -182,16 +183,16 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
             pathDirections.Clear();
             var startTile = map.GetTile(Start);
 
-            while (tile != startTile)
+            while (tile.Index != startTile.Index)
             {
-                if (tile == null)
+                if (tile.IsDefault())
                 {
                     return new Vector2Int[0];
                 }
 
                 pathDirections.Add(tile.ParentDir);
 
-                tile = tile.Parent;
+                tile = map.GetTile(tile.Parent);
             }
 
             var path = new Vector2Int[pathDirections.Count + 1];
@@ -213,16 +214,18 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
 
         private void CalculateCost(Tile tile)
         {
-            var costMultiplier = (tile.PassablePercent + tile.Parent.PassablePercent) / 2f;
+            if (tile.Parent == -1)
+            {
+                tile.SetCosts(0, 0, 0);
+            }
+
+            var parent = map.GetTile(tile.Parent);
+
+            var costMultiplier = (tile.PassablePercent + parent.PassablePercent) / 2f;
 
             costMultiplier /= 100;
 
-            var gCost = 0;
-
-            if (tile.Parent != null)
-            {
-                gCost = tile.Parent.GCost + (int)(1000 / costMultiplier);
-            }
+            var gCost = parent.GCost + (int)(1000 / costMultiplier);
 
             tile.SetCosts(gCost, 0, 0);
         }
@@ -235,7 +238,7 @@ namespace Braddss.Pathfinding.Assets.Scripts.Pathfinding.Dijkstras
             closedSet.Clear();
             pathDirections.Clear();
 
-            current = null;
+            current = Tile.Default();
         }
     }
 }

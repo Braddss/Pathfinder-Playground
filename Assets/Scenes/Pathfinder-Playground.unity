@@ -365,7 +365,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   algorithm: 0
-  mapSize: 198
+  mapSize: 614
   perlinConfig:
     seed: 18
     frequency: 27
@@ -376,11 +376,12 @@ MonoBehaviour:
     steps: 10
     transitionSize: 0.53
   isoValue: 0.045
-  showDebug: 0
-  showPath: 0
-  runPathfinding: 0
+  showDebug: 1
+  showPath: 1
+  runPathfinding: 1
   stepPath: 0
-  speed: 0.001
+  speed: 0.0001
+  heuristicMultiplier: 1
   mapMaterial: {fileID: 2100000, guid: 4c41466e282ff164888c1df2846719b7, type: 2}
 --- !u!4 &1767882483
 Transform:
